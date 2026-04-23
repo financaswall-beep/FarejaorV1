@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__06e27ee1-5b15-4b84-8733-c006cce44f97__list_projects",
+      "mcp__06e27ee1-5b15-4b84-8733-c006cce44f97__list_tables",
+      "mcp__06e27ee1-5b15-4b84-8733-c006cce44f97__list_extensions",
+      "mcp__06e27ee1-5b15-4b84-8733-c006cce44f97__list_migrations",
+      "mcp__06e27ee1-5b15-4b84-8733-c006cce44f97__execute_sql"
+    ]
+  }
+}
