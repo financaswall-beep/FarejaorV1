@@ -138,7 +138,7 @@ export class ChatwootApiClient {
         clearTimeout(timeout);
 
         const bodyText = await response.text();
-        logger.info(
+        logger.debug(
           {
             status_code: response.status,
             duration_ms: Date.now() - startedAt,

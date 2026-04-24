@@ -136,7 +136,14 @@ describe('registerReconcileRoute', () => {
   });
 
   it('returns 200 with reconcile counters for a valid body', async () => {
-    const result = { inserted: 1, skipped_duplicate: 2, errors: [], pages_fetched: 1 };
+    const result = {
+      inserted: 1,
+      skipped_duplicate: 2,
+      errors: [],
+      pages_fetched: 1,
+      aborted: false,
+      abort_reason: null,
+    };
     const reconcileMock = vi.fn().mockResolvedValue(result);
     const { registerReconcileRoute } = await loadReconcileRoute(reconcileMock);
     const fastify = createFastify();

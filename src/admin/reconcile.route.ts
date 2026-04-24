@@ -42,6 +42,7 @@ export async function registerReconcileRoute(fastify: FastifyInstance): Promise<
 
         return reply.status(200).send(result);
       } catch (err) {
+        // Vitest/ESM mocks can load a second copy of this class; name keeps 502 handling stable.
         if (
           err instanceof ChatwootApiError ||
           (err instanceof Error && err.name === 'ChatwootApiError')

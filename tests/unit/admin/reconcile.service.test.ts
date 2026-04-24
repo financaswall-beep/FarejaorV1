@@ -252,4 +252,76 @@ describe('reconcile service', () => {
       { chatwoot_conversation_id: 123, reason: 'invalid message payload' },
     ]);
   });
+
+  it('returns a partial aborted result when conversation pagination fails', async () => {
+    const { reconcile } = await loadReconcile();
+    const pool = createPool();
+    const chatwootClient: ReconcileChatwootClient = {
+      listConversations: vi
+        .fn()
+        .mockResolvedValueOnce({
+          items: [createConversation(123)],
+          hasMore: true,
+          page: 1,
+        })
+        .mockRejectedValueOnce(new Error('network down')),
+      listMessages: vi.fn().mockResolvedValue({ items: [], hasMore: false, page: 1 }),
+    };
+
+    const result = await reconcile(
+      {
+        since: new Date('2026-04-20T00:00:00Z'),
+        until: new Date('2026-04-24T00:00:00Z'),
+        environment: 'prod',
+      },
+      {
+        chatwootClient,
+        pool: pool as never,
+        insertRawEvent: vi.fn().mockResolvedValue(1),
+      },
+    );
+
+    expect(result.inserted).toBe(1);
+    expect(result.pages_fetched).toBe(1);
+    expect(result.aborted).toBe(true);
+    expect(result.abort_reason).toBe('conversation pagination failed: network down');
+  });
+
+  it('records message pagination errors and continues with later conversations', async () => {
+    const { reconcile } = await loadReconcile();
+    const pool = createPool();
+    const chatwootClient: ReconcileChatwootClient = {
+      listConversations: vi.fn().mockResolvedValue({
+        items: [createConversation(1), createConversation(2)],
+        hasMore: false,
+        page: 1,
+      }),
+      listMessages: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('messages unavailable'))
+        .mockResolvedValueOnce({ items: [], hasMore: false, page: 1 }),
+    };
+
+    const result = await reconcile(
+      {
+        since: new Date('2026-04-20T00:00:00Z'),
+        until: new Date('2026-04-24T00:00:00Z'),
+        environment: 'prod',
+      },
+      {
+        chatwootClient,
+        pool: pool as never,
+        insertRawEvent: vi.fn().mockResolvedValue(1),
+      },
+    );
+
+    expect(result.inserted).toBe(2);
+    expect(result.aborted).toBe(false);
+    expect(result.errors).toEqual([
+      {
+        chatwoot_conversation_id: 1,
+        reason: 'messages pagination failed: messages unavailable',
+      },
+    ]);
+  });
 });

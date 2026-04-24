@@ -11,7 +11,7 @@ Validacao local final:
 
 ```text
 npm run typecheck  -> verde
-npm test           -> 95 testes passando
+npm test           -> 97 testes passando
 npm run build      -> verde
 ```
 
@@ -96,7 +96,9 @@ Nao inclui:
 - [x] Reconcile pagina Chatwoot API.
 - [x] Reconcile injeta via bouncer de dedup.
 - [x] Reconcile usa delivery_id deterministico `reconcile:*`.
-- [x] Reconcile responde contagens `{ inserted, skipped_duplicate, errors, pages_fetched }`.
+- [x] Reconcile responde contagens `{ inserted, skipped_duplicate, errors, pages_fetched, aborted, abort_reason }`.
+- [x] Reconcile retorna resultado parcial quando a paginacao de conversas falha.
+- [x] Falha ao paginar mensagens de uma conversa vira erro daquela conversa e nao aborta as demais.
 - [x] Todos os admin endpoints protegidos por bearer, exceto `/healthz`.
 - [x] Endpoint admin sem bearer retorna 401.
 - [x] Suite completa verde.
@@ -105,6 +107,8 @@ Nao inclui:
 
 - `src/persistence/raw-events.repository.ts` recebeu ajuste minimo para aceitar `environment` explicito no input. Isso permite reconcile controlado para `prod` ou `test`.
 - Erros da API Chatwoot em reconcile retornam 502 (`chatwoot_api_unavailable`).
+- Falhas durante a paginacao de conversas retornam resultado parcial com `aborted=true`.
+- Falhas durante a paginacao de mensagens ficam registradas em `errors` e o reconcile continua nas demais conversas.
 - Reconcile nao escreve direto em `core.*`; ele injeta em `raw.*` e deixa o worker F1-02 normalizar.
 - Teste manual com Chatwoot real fica pendente ate haver credenciais reais configuradas no ambiente.
 

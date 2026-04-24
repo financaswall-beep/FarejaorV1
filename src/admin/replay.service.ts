@@ -28,10 +28,6 @@ export async function replayRawEvent(pool: Pool, rawEventId: number): Promise<Re
     [rawEventId, env.FAREJADOR_ENV],
   );
 
-  if (result.rowCount === 0) {
-    return null;
-  }
-
   const row = result.rows[0];
   if (!row) {
     return null;

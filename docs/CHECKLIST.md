@@ -91,8 +91,9 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] `POST /admin/reconcile`.
 - [x] Cliente API Chatwoot com timeout, retry e paginacao.
 - [x] Reconcile injeta raw_events sinteticos com delivery_id deterministico.
+- [x] Reconcile retorna resultado parcial quando a paginacao falha.
 - [x] Testes unitarios de auth, health, replay, cliente Chatwoot, reconcile service e route.
-- [x] `npm test` 95/95.
+- [x] `npm test` 97/97.
 - [x] `npm run typecheck` verde.
 - [x] `npm run build` verde.
 - [ ] Teste manual/integracao com Chatwoot real e Supabase real.

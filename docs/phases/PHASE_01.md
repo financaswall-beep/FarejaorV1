@@ -54,7 +54,8 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
 - `/admin/reconcile` protegido por bearer, com janela maxima de 7 dias.
 - Cliente Chatwoot usa `fetch` nativo, timeout de 10s e retry em 429/5xx.
 - Reconcile injeta somente raw_events sinteticos e usa `raw.delivery_seen` para dedup.
-- Validacao local: 95 testes, typecheck e build verdes.
+- Reconcile explicita resultado parcial com `aborted`/`abort_reason` quando a paginacao falha.
+- Validacao local: 97 testes, typecheck e build verdes.
 
 ## Criterios restantes para concluir a Fase 1
 

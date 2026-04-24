@@ -28,7 +28,7 @@ export interface ReconcileInput {
 }
 
 export interface ReconcileError {
-  chatwoot_conversation_id: number;
+  chatwoot_conversation_id: number | null;
   reason: string;
 }
 
@@ -37,6 +37,8 @@ export interface ReconcileResult {
   skipped_duplicate: number;
   errors: ReconcileError[];
   pages_fetched: number;
+  aborted: boolean;
+  abort_reason: string | null;
 }
 
 export interface ReconcileChatwootClient {
@@ -45,11 +47,36 @@ export interface ReconcileChatwootClient {
 }
 
 type InsertRawEventFn = typeof claimAndInsertRawEvent;
+type RawEventInput = Parameters<InsertRawEventFn>[1];
+type MappedConversation = z.infer<typeof conversationSchema>;
+type MappedMessage = z.infer<typeof messageSchema>;
 
 export interface ReconcileDependencies {
   chatwootClient?: ReconcileChatwootClient;
   pool?: Pool;
   insertRawEvent?: InsertRawEventFn;
+}
+
+interface InsertContext {
+  dbPool: Pool;
+  insertRawEvent: InsertRawEventFn;
+  result: ReconcileResult;
+}
+
+interface SyntheticEvent {
+  conversationId: number | null;
+  input: RawEventInput;
+}
+
+function createInitialResult(): ReconcileResult {
+  return {
+    inserted: 0,
+    skipped_duplicate: 0,
+    errors: [],
+    pages_fetched: 0,
+    aborted: false,
+    abort_reason: null,
+  };
 }
 
 function parseTimestampToDate(value: unknown): Date | null {
@@ -81,10 +108,61 @@ function withEvent(payload: Record<string, unknown>, event: string): Record<stri
   };
 }
 
+function pushError(result: ReconcileResult, conversationId: number | null, reason: string): void {
+  result.errors.push({
+    chatwoot_conversation_id: conversationId,
+    reason,
+  });
+}
+
+function buildConversationEvent(input: ReconcileInput, conversation: MappedConversation): SyntheticEvent | null {
+  const updatedAt = parseTimestampToDate(conversation.updated_at);
+  if (!updatedAt) {
+    return null;
+  }
+
+  return {
+    conversationId: conversation.id,
+    input: {
+      environment: input.environment,
+      chatwootDeliveryId: `reconcile:conv:${input.environment}:${conversation.id}:${unixSeconds(updatedAt)}`,
+      chatwootSignature: 'reconcile:synthetic',
+      chatwootTimestamp: updatedAt,
+      eventType: 'conversation_updated',
+      accountId: env.CHATWOOT_ACCOUNT_ID ?? null,
+      payload: withEvent(conversation, 'conversation_updated'),
+    },
+  };
+}
+
+function buildMessageEvent(
+  input: ReconcileInput,
+  conversationId: number,
+  message: MappedMessage,
+): SyntheticEvent | null {
+  const createdAt = parseTimestampToDate(message.created_at);
+  if (!createdAt) {
+    return null;
+  }
+
+  return {
+    conversationId,
+    input: {
+      environment: input.environment,
+      chatwootDeliveryId: `reconcile:msg:${input.environment}:${message.id}:${unixSeconds(createdAt)}`,
+      chatwootSignature: 'reconcile:synthetic',
+      chatwootTimestamp: createdAt,
+      eventType: 'message_created',
+      accountId: env.CHATWOOT_ACCOUNT_ID ?? null,
+      payload: withEvent(message, 'message_created'),
+    },
+  };
+}
+
 async function insertSyntheticRawEvent(
   dbPool: Pool,
   insertRawEvent: InsertRawEventFn,
-  input: Parameters<InsertRawEventFn>[1],
+  input: RawEventInput,
 ): Promise<number | null> {
   let client: PoolClient | null = null;
 
@@ -104,131 +182,128 @@ async function insertSyntheticRawEvent(
   }
 }
 
+async function processSyntheticEvent(context: InsertContext, event: SyntheticEvent): Promise<void> {
+  try {
+    const rawEventId = await insertSyntheticRawEvent(
+      context.dbPool,
+      context.insertRawEvent,
+      event.input,
+    );
+
+    if (rawEventId === null) {
+      context.result.skipped_duplicate++;
+    } else {
+      context.result.inserted++;
+    }
+  } catch (err) {
+    pushError(context.result, event.conversationId, errorReason(err));
+  }
+}
+
+async function processMessagesForConversation(
+  input: ReconcileInput,
+  chatwootClient: ReconcileChatwootClient,
+  context: InsertContext,
+  conversationId: number,
+): Promise<void> {
+  let messagePage = 1;
+  let hasMoreMessages = true;
+
+  while (hasMoreMessages) {
+    let messagesPage: ChatwootPage;
+
+    try {
+      messagesPage = await chatwootClient.listMessages({
+        conversationId,
+        page: messagePage,
+      });
+    } catch (err) {
+      pushError(context.result, conversationId, `messages pagination failed: ${errorReason(err)}`);
+      return;
+    }
+
+    for (const rawMessage of messagesPage.items) {
+      const messageResult = messageSchema.safeParse(rawMessage);
+      if (!messageResult.success) {
+        pushError(context.result, conversationId, 'invalid message payload');
+        continue;
+      }
+
+      const event = buildMessageEvent(input, conversationId, messageResult.data);
+      if (!event) {
+        pushError(
+          context.result,
+          conversationId,
+          `message ${messageResult.data.id} created_at missing or invalid`,
+        );
+        continue;
+      }
+
+      await processSyntheticEvent(context, event);
+    }
+
+    hasMoreMessages = messagesPage.hasMore;
+    messagePage++;
+  }
+}
+
+async function processConversation(
+  input: ReconcileInput,
+  chatwootClient: ReconcileChatwootClient,
+  context: InsertContext,
+  rawConversation: Record<string, unknown>,
+): Promise<void> {
+  const conversationResult = conversationSchema.safeParse(rawConversation);
+  if (!conversationResult.success) {
+    pushError(context.result, null, 'invalid conversation payload');
+    return;
+  }
+
+  const conversation = conversationResult.data;
+  const conversationEvent = buildConversationEvent(input, conversation);
+  if (!conversationEvent) {
+    pushError(context.result, conversation.id, 'conversation updated_at missing or invalid');
+    return;
+  }
+
+  await processSyntheticEvent(context, conversationEvent);
+  await processMessagesForConversation(input, chatwootClient, context, conversation.id);
+}
+
 export async function reconcile(
   input: ReconcileInput,
   dependencies: ReconcileDependencies = {},
 ): Promise<ReconcileResult> {
   const startedAt = Date.now();
   const chatwootClient = dependencies.chatwootClient ?? new ChatwootApiClient();
-  const dbPool = dependencies.pool ?? defaultPool;
-  const insertRawEvent = dependencies.insertRawEvent ?? claimAndInsertRawEvent;
-  const result: ReconcileResult = {
-    inserted: 0,
-    skipped_duplicate: 0,
-    errors: [],
-    pages_fetched: 0,
+  const context: InsertContext = {
+    dbPool: dependencies.pool ?? defaultPool,
+    insertRawEvent: dependencies.insertRawEvent ?? claimAndInsertRawEvent,
+    result: createInitialResult(),
   };
 
   let conversationPage = 1;
   let hasMoreConversations = true;
 
   while (hasMoreConversations) {
-    const conversationsPage = await chatwootClient.listConversations({
-      since: input.since,
-      until: input.until,
-      page: conversationPage,
-    });
-    result.pages_fetched++;
+    let conversationsPage: ChatwootPage;
+
+    try {
+      conversationsPage = await chatwootClient.listConversations({
+        since: input.since,
+        until: input.until,
+        page: conversationPage,
+      });
+    } catch (err) {
+      context.result.aborted = true;
+      context.result.abort_reason = `conversation pagination failed: ${errorReason(err)}`;
+      break;
+    }
+
+    context.result.pages_fetched++;
 
     for (const rawConversation of conversationsPage.items) {
-      const conversationResult = conversationSchema.safeParse(rawConversation);
-      if (!conversationResult.success) {
-        result.errors.push({
-          chatwoot_conversation_id: 0,
-          reason: 'invalid conversation payload',
-        });
-        continue;
-      }
-
-      const conversation = conversationResult.data;
-      const conversationUpdatedAt = parseTimestampToDate(conversation.updated_at);
-      if (!conversationUpdatedAt) {
-        result.errors.push({
-          chatwoot_conversation_id: conversation.id,
-          reason: 'conversation updated_at missing or invalid',
-        });
-        continue;
-      }
-
-      try {
-        const rawEventId = await insertSyntheticRawEvent(dbPool, insertRawEvent, {
-          environment: input.environment,
-          chatwootDeliveryId: `reconcile:conv:${input.environment}:${conversation.id}:${unixSeconds(conversationUpdatedAt)}`,
-          chatwootSignature: 'reconcile:synthetic',
-          chatwootTimestamp: conversationUpdatedAt,
-          eventType: 'conversation_updated',
-          accountId: env.CHATWOOT_ACCOUNT_ID ?? null,
-          payload: withEvent(conversation, 'conversation_updated'),
-        });
-
-        if (rawEventId === null) {
-          result.skipped_duplicate++;
-        } else {
-          result.inserted++;
-        }
-      } catch (err) {
-        result.errors.push({
-          chatwoot_conversation_id: conversation.id,
-          reason: errorReason(err),
-        });
-      }
-
-      let messagePage = 1;
-      let hasMoreMessages = true;
-
-      while (hasMoreMessages) {
-        const messagesPage = await chatwootClient.listMessages({
-          conversationId: conversation.id,
-          page: messagePage,
-        });
-
-        for (const rawMessage of messagesPage.items) {
-          const messageResult = messageSchema.safeParse(rawMessage);
-          if (!messageResult.success) {
-            result.errors.push({
-              chatwoot_conversation_id: conversation.id,
-              reason: 'invalid message payload',
-            });
-            continue;
-          }
-
-          const message = messageResult.data;
-          const messageCreatedAt = parseTimestampToDate(message.created_at);
-          if (!messageCreatedAt) {
-            result.errors.push({
-              chatwoot_conversation_id: conversation.id,
-              reason: `message ${message.id} created_at missing or invalid`,
-            });
-            continue;
-          }
-
-          try {
-            const rawEventId = await insertSyntheticRawEvent(dbPool, insertRawEvent, {
-              environment: input.environment,
-              chatwootDeliveryId: `reconcile:msg:${input.environment}:${message.id}:${unixSeconds(messageCreatedAt)}`,
-              chatwootSignature: 'reconcile:synthetic',
-              chatwootTimestamp: messageCreatedAt,
-              eventType: 'message_created',
-              accountId: env.CHATWOOT_ACCOUNT_ID ?? null,
-              payload: withEvent(message, 'message_created'),
-            });
-
-            if (rawEventId === null) {
-              result.skipped_duplicate++;
-            } else {
-              result.inserted++;
-            }
-          } catch (err) {
-            result.errors.push({
-              chatwoot_conversation_id: conversation.id,
-              reason: errorReason(err),
-            });
-          }
-        }
-
-        hasMoreMessages = messagesPage.hasMore;
-        messagePage++;
-      }
+      await processConversation(input, chatwootClient, context, rawConversation);
     }
 
     hasMoreConversations = conversationsPage.hasMore;
@@ -237,14 +312,15 @@ export async function reconcile(
 
   logger.info(
     {
-      inserted: result.inserted,
-      skipped_duplicate: result.skipped_duplicate,
-      errors_count: result.errors.length,
-      pages_fetched: result.pages_fetched,
+      inserted: context.result.inserted,
+      skipped_duplicate: context.result.skipped_duplicate,
+      errors_count: context.result.errors.length,
+      pages_fetched: context.result.pages_fetched,
+      aborted: context.result.aborted,
       duration_ms: Date.now() - startedAt,
     },
     'admin reconcile completed',
   );
 
-  return result;
+  return context.result;
 }
