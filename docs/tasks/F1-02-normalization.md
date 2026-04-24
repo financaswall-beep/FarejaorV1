@@ -50,11 +50,11 @@ via upsert idempotente com watermark de ordem.
 - Eventos desconhecidos viram `skipped`.
 - Erros de normalizacao viram `failed` com `processing_error`.
 
-## Pontos deliberadamente deixados para F1-03
+## Pontos assumidos pela F1-03 e validacao operacional
 
-- Teste de integracao real com Supabase para replay, idempotencia e `SKIP LOCKED` concorrente.
-- Reprocessamento administrativo via endpoint.
-- Reconcile via API Chatwoot.
+- Reprocessamento administrativo via endpoint foi entregue em F1-03.
+- Reconcile via API Chatwoot foi entregue em F1-03.
+- Teste de integracao real com Supabase para replay, idempotencia e `SKIP LOCKED` concorrente continua como validacao operacional antes do fim da Fase 1.
 - Implementacao real de reactions, caso o Chatwoot passe a enviar payloads relevantes.
 
 ## Arquivos principais

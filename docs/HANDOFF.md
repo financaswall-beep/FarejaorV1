@@ -34,7 +34,7 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | F1-04 fixtures/testes | Concluido |
 | F1-01 webhook ingestion | Concluido e validado contra Supabase |
 | F1-02 normalizacao | Concluido, auditado e corrigido |
-| F1-03 admin endpoints | Proximo |
+| F1-03 admin endpoints | Concluido, auditado, corrigido e publicado |
 
 ## F1-01 - entregue
 
@@ -61,9 +61,9 @@ confiavel de conversas para uso futuro em analytics e LLM.
 - `SAVEPOINT normalize_event` preservado de proposito.
 - Validacao final: `npm test` 60/60, `npm run typecheck`, `npm run build`.
 
-## Proxima tarefa: F1-03
+## F1-03 - entregue
 
-Implementar endpoints admin:
+Endpoints admin implementados:
 
 - `GET /healthz`
 - `POST /admin/replay/:raw_event_id`
@@ -75,17 +75,27 @@ Regras criticas:
 - `/admin/*` exige bearer token com comparacao timing-safe.
 - Replay so muda campos operacionais: `processing_status`, `processing_error`, `processed_at`.
 - Reconcile injeta em raw, nunca escreve direto em core.
-- Validar idempotencia real no caminho de replay.
+- Reconcile retorna resultado parcial com `aborted` e `abort_reason` em falha de paginacao.
+- Validacao local final: `npm test` 97/97, `npm run typecheck`, `npm run build`.
+
+## Proxima etapa operacional
+
+Antes de abrir Fase 2, validar a Fase 1 com dados reais controlados:
+
+- Rodar `/admin/replay/:raw_event_id` contra Supabase real e confirmar que nao duplica `core.*`.
+- Rodar `/admin/reconcile` com janela pequena contra Chatwoot real e confirmar inserts em `raw.*`.
+- Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
+- Iniciar shadow mode com webhooks reais por periodo combinado.
 
 ## Fluxo recomendado para Kimi
 
-Usar branch:
+Usar branch por task:
 
 ```text
-feature/F1-03-admin
+feature/<id-task>-<slug>
 ```
 
-Prompt base:
+Prompt base atualizado:
 
 ```text
 Leia e obedeca docs/KIMI_RULES.md.
@@ -95,12 +105,13 @@ Leia tambem:
 - docs/CONTRACTS.md
 - docs/CONFIG.md
 - docs/LOGGING.md
-- docs/tasks/F1-03-admin.md
+- docs/tasks/<TASK_ATUAL>.md
 
-Sua tarefa e exclusivamente F1-03.
+Sua tarefa e exclusivamente <TASK_ATUAL>.
 Nao altere migrations.
 Nao altere src/shared/types/chatwoot.ts.
-Nao escreva em analytics.* nem ops.enrichment_jobs.
+Nao escreva fora das camadas autorizadas pela task.
+Se a task for de Fase 1, nao escreva em analytics.* nem ops.enrichment_jobs.
 Ao final entregue arquivos alterados, checklist, validacao, pendencias e riscos.
 ```
 
@@ -108,5 +119,5 @@ Ao final entregue arquivos alterados, checklist, validacao, pendencias e riscos.
 
 - `.env.codex` existe localmente e nao deve ser commitado.
 - Secrets nunca devem ser impressos em log.
-- O repo remoto ja recebeu F1-01 e F1-02.
+- O repo remoto ja recebeu F1-01, F1-02 e F1-03.
 - Preferir patches pequenos e auditaveis.

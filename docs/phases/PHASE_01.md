@@ -5,7 +5,7 @@
 - F1-04 fixtures/testes base: concluida.
 - F1-01 webhook ingestion: concluida, validada contra Supabase e publicada.
 - F1-02 normalizacao: concluida, auditada, corrigida e publicada.
-- F1-03 admin endpoints: implementada no codigo local.
+- F1-03 admin endpoints: concluida, auditada, corrigida e publicada.
 
 ## Objetivo
 

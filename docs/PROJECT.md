@@ -8,7 +8,7 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 
 | Fase | Nome | Resumo |
 | --- | --- | --- |
-| 1 | Farejador deterministico | Webhook, dedup, raw, normalizacao em core e admin replay. Zero LLM. |
+| 1 | Farejador deterministico | Webhook, dedup, raw, normalizacao em core, admin replay e reconcile. Zero LLM. |
 | 2a | Enrichment deterministico | Workers SQL/regex populando `analytics.*`. Zero LLM. |
 | 2b | Enrichment com LLM | Workers LLM populando somente `analytics.*`. |
 | 3 | Agente atendente | Servico separado, read-only sobre `core.*` e `analytics.*`. |
@@ -17,7 +17,8 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 
 - F1-01 webhook ingestion: concluida e validada contra Supabase.
 - F1-02 normalizacao deterministica: concluida, auditada e validada com 60 testes.
-- F1-03 admin endpoints: proxima etapa.
+- F1-03 admin endpoints: concluida, auditada e validada com 97 testes.
+- Fase 1 agora esta em validacao operacional: teste real de replay/reconcile, concorrencia no Supabase e shadow mode com webhooks reais.
 
 ## Invariantes
 
@@ -37,6 +38,14 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 - Attachments usam o UUID de conversa ja resolvido, sem subselect fragil.
 - `reaction.mapper` continua placeholder, mas payload de reaction gera `logger.warn`.
 - `SAVEPOINT normalize_event` no worker e intencional para marcar falha sem soltar lock.
+
+## Decisoes recentes da F1-03
+
+- `/healthz` nao exige auth e valida DB com timeout.
+- `/admin/replay/:raw_event_id` exige bearer e altera somente campos operacionais.
+- `/admin/reconcile` exige bearer, limita janela a 7 dias e injeta somente raw_events sinteticos.
+- Reconcile usa delivery_id deterministico `reconcile:*` para idempotencia via `raw.delivery_seen`.
+- Reconcile retorna resultado parcial com `aborted` e `abort_reason` quando a paginacao de conversas falha.
 
 ## Stack
 
