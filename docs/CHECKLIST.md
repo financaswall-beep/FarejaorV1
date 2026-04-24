@@ -37,6 +37,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] `docs/REVIEW_PROTOCOL.md`
 - [x] `docs/HANDOFF.md`
 - [x] `docs/CHECKLIST.md`
+- [x] `docs/DATA_DICTIONARY.md`
 - [x] `docs/phases/PHASE_01.md`
 - [x] `docs/tasks/F1-01-webhook.md`
 - [x] `docs/tasks/F1-02-normalization.md`
@@ -83,17 +84,23 @@ Legenda: feito, em andamento, proximo, futuro.
 
 ### F1-03 - Admin endpoints
 
-- [ ] `GET /healthz`.
-- [ ] Auth bearer timing-safe para `/admin/*`.
-- [ ] `POST /admin/replay/:raw_event_id`.
-- [ ] `POST /admin/reconcile`.
-- [ ] Testes de replay/idempotencia.
-- [ ] Teste de integracao controlado com Supabase, se viavel.
+- [x] `GET /healthz`.
+- [x] Auth bearer timing-safe para `/admin/*`.
+- [x] `POST /admin/replay/:raw_event_id`.
+- [x] Replay com `FOR UPDATE` e reset apenas de campos operacionais.
+- [x] `POST /admin/reconcile`.
+- [x] Cliente API Chatwoot com timeout, retry e paginacao.
+- [x] Reconcile injeta raw_events sinteticos com delivery_id deterministico.
+- [x] Testes unitarios de auth, health, replay, cliente Chatwoot, reconcile service e route.
+- [x] `npm test` 95/95.
+- [x] `npm run typecheck` verde.
+- [x] `npm run build` verde.
+- [ ] Teste manual/integracao com Chatwoot real e Supabase real.
 
 ## 5. Criterios restantes para fechar Fase 1
 
-- [ ] `/admin/replay/:id` reprocessa uma linha `failed`.
-- [ ] `/admin/reconcile` traz conversas faltantes sem duplicar.
+- [x] `/admin/replay/:id` reprocessa uma linha `failed` no contrato unitario.
+- [x] `/admin/reconcile` traz conversas faltantes sem duplicar no contrato unitario.
 - [ ] Replay real nao duplica status events, assignments, messages ou attachments.
 - [ ] Dois workers nao pegam o mesmo raw_event em teste/integracao com Postgres.
 - [ ] Shadow mode com webhooks reais por periodo combinado.

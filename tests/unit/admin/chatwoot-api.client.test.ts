@@ -1,0 +1,192 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const baseEnv = {
+  NODE_ENV: 'test',
+  FAREJADOR_ENV: 'prod',
+  DATABASE_URL: 'postgresql://postgres:password@example.test:6543/postgres',
+  CHATWOOT_HMAC_SECRET: 'test-secret',
+  ADMIN_AUTH_TOKEN: 'test-admin-token',
+};
+
+async function loadClient() {
+  vi.resetModules();
+  Object.assign(process.env, baseEnv);
+  vi.doMock('pino', () => ({
+    default: vi.fn(() => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    })),
+  }));
+
+  return import('../../../src/admin/chatwoot-api.client.js');
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status });
+}
+
+describe('ChatwootApiClient', () => {
+  afterEach(() => {
+    vi.doUnmock('pino');
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+    vi.resetModules();
+  });
+
+  it('returns parsed payload from a valid 200 response', async () => {
+    const { ChatwootApiClient } = await loadClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: {
+          payload: [{ id: 123, updated_at: '2026-04-24T12:00:00Z' }],
+          meta: { all_count: 1, per_page: 25 },
+        },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+    });
+
+    const page = await client.listConversations({
+      since: new Date('2026-04-20T00:00:00Z'),
+      until: new Date('2026-04-24T00:00:00Z'),
+      page: 1,
+    });
+
+    expect(page.items).toEqual([{ id: 123, updated_at: '2026-04-24T12:00:00Z' }]);
+    expect(page.hasMore).toBe(false);
+  });
+
+  it('retries 5xx responses up to 3 attempts and then throws', async () => {
+    const { ChatwootApiClient, ChatwootApiError } = await loadClient();
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ error: 'server unavailable' }, 500));
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+      fetchFn: fetchMock as typeof fetch,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      client.listConversations({
+        since: new Date('2026-04-20T00:00:00Z'),
+        until: new Date('2026-04-24T00:00:00Z'),
+        page: 1,
+      }),
+    ).rejects.toBeInstanceOf(ChatwootApiError);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('retries 429 responses with backoff', async () => {
+    const { ChatwootApiClient } = await loadClient();
+    const sleepMock = vi.fn().mockResolvedValue(undefined);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ error: 'rate limited' }, 429))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: { payload: [], meta: { all_count: 0, per_page: 25 } },
+        }),
+      );
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+      fetchFn: fetchMock as typeof fetch,
+      sleepFn: sleepMock,
+    });
+
+    await client.listConversations({
+      since: new Date('2026-04-20T00:00:00Z'),
+      until: new Date('2026-04-24T00:00:00Z'),
+      page: 1,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sleepMock).toHaveBeenCalledWith(500);
+  });
+
+  it('does not retry non-retriable 4xx responses', async () => {
+    const { ChatwootApiClient, ChatwootApiError } = await loadClient();
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ error: 'not found' }, 404));
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+      fetchFn: fetchMock as typeof fetch,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(client.listMessages({ conversationId: 123, page: 1 })).rejects.toBeInstanceOf(
+      ChatwootApiError,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('aborts a request after the 10s timeout', async () => {
+    const { ChatwootApiClient, ChatwootApiError } = await loadClient();
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((_url: URL | RequestInfo, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+      });
+    });
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+      fetchFn: fetchMock as typeof fetch,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const promise = client.listMessages({ conversationId: 123, page: 1 });
+    const expectation = expect(promise).rejects.toBeInstanceOf(ChatwootApiError);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expectation;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not include the API token in thrown errors', async () => {
+    const { ChatwootApiClient } = await loadClient();
+    const token = 'super-secret-chatwoot-token-value';
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ error: token }, 401));
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: token,
+      fetchFn: fetchMock as typeof fetch,
+    });
+
+    await expect(client.listMessages({ conversationId: 123, page: 1 })).rejects.not.toThrow(token);
+  });
+
+  it('sets hasMore when all_count is greater than page times per_page', async () => {
+    const { ChatwootApiClient } = await loadClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: {
+          payload: [{ id: 1 }, { id: 2 }],
+          meta: { all_count: 5, per_page: 2 },
+        },
+      }),
+    );
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+      fetchFn: fetchMock as typeof fetch,
+    });
+
+    const page = await client.listMessages({ conversationId: 123, page: 1 });
+
+    expect(page.hasMore).toBe(true);
+  });
+});

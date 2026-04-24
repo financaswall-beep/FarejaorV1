@@ -51,6 +51,7 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 
 - `AGENTS.md`
 - `db/migrations/README.md`
+- `docs/DATA_DICTIONARY.md`
 - `docs/KIMI_RULES.md`
 - `docs/phases/PHASE_01.md`
 - `docs/tasks/F1-03-admin.md`

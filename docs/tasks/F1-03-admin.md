@@ -2,7 +2,18 @@
 
 ## Status
 
-Proxima fase. Pode iniciar agora que F1-02 esta concluida e validada.
+Concluida no codigo local. F1-03 foi dividida em duas partes:
+
+- Parte A: auth, healthz e replay.
+- Parte B: reconcile via API Chatwoot.
+
+Validacao local final:
+
+```text
+npm run typecheck  -> verde
+npm test           -> 95 testes passando
+npm run build      -> verde
+```
 
 ## Objetivo
 
@@ -17,7 +28,7 @@ Inclui:
 - `POST /admin/replay/:raw_event_id` - forca reprocessamento de um raw_event.
 - `POST /admin/reconcile` - busca conversas via API Chatwoot em janela de datas e injeta raw_events sinteticos.
 - Middleware de auth bearer em `src/admin/auth.ts`.
-- Testes unitarios e, quando possivel, teste de integracao controlado contra Supabase.
+- Testes unitarios.
 
 Nao inclui:
 
@@ -73,19 +84,29 @@ Nao inclui:
 
 ## Checklist
 
-- [ ] Middleware de auth bearer implementado com timing-safe compare.
-- [ ] `GET /healthz` retorna 200 quando DB esta saudavel.
-- [ ] `GET /healthz` retorna 503 quando DB nao responde.
-- [ ] `POST /admin/replay/:id` marca pending e limpa campos de erro.
-- [ ] Replay de id inexistente retorna 404.
-- [ ] Replay de id ja pending retorna 200 sem mudanca destrutiva.
-- [ ] `POST /admin/reconcile` valida body com Zod.
-- [ ] Reconcile pagina Chatwoot API.
-- [ ] Reconcile injeta via bouncer de dedup.
-- [ ] Reconcile responde contagens `{ inserted, skipped_duplicate, errors }`.
-- [ ] Todos os admin endpoints protegidos por bearer, exceto `/healthz`.
-- [ ] Endpoint admin sem bearer retorna 401.
-- [ ] Suite completa verde.
+- [x] Middleware de auth bearer implementado com timing-safe compare.
+- [x] `GET /healthz` retorna 200 quando DB esta saudavel.
+- [x] `GET /healthz` retorna 503 quando DB nao responde.
+- [x] `POST /admin/replay/:id` marca pending e limpa campos de erro.
+- [x] Replay usa `FOR UPDATE` para capturar `previous_status` de forma segura.
+- [x] Replay de id inexistente retorna 404.
+- [x] Replay de id ja pending retorna 200 sem mudanca destrutiva.
+- [x] `POST /admin/reconcile` valida body com Zod.
+- [x] Reconcile limita janela a 7 dias.
+- [x] Reconcile pagina Chatwoot API.
+- [x] Reconcile injeta via bouncer de dedup.
+- [x] Reconcile usa delivery_id deterministico `reconcile:*`.
+- [x] Reconcile responde contagens `{ inserted, skipped_duplicate, errors, pages_fetched }`.
+- [x] Todos os admin endpoints protegidos por bearer, exceto `/healthz`.
+- [x] Endpoint admin sem bearer retorna 401.
+- [x] Suite completa verde.
+
+## Observacoes de implementacao
+
+- `src/persistence/raw-events.repository.ts` recebeu ajuste minimo para aceitar `environment` explicito no input. Isso permite reconcile controlado para `prod` ou `test`.
+- Erros da API Chatwoot em reconcile retornam 502 (`chatwoot_api_unavailable`).
+- Reconcile nao escreve direto em `core.*`; ele injeta em `raw.*` e deixa o worker F1-02 normalizar.
+- Teste manual com Chatwoot real fica pendente ate haver credenciais reais configuradas no ambiente.
 
 ## Criterios de aceite
 

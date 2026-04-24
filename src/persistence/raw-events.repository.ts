@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 import { env } from '../shared/config/env.js';
 
 interface InsertRawEventInput {
+  environment?: 'prod' | 'test';
   chatwootDeliveryId: string;
   chatwootSignature: string;
   chatwootTimestamp: Date;
@@ -43,7 +44,7 @@ export async function claimAndInsertRawEvent(
      )
      SELECT id FROM inserted`,
     [
-      env.FAREJADOR_ENV,
+      input.environment ?? env.FAREJADOR_ENV,
       input.chatwootDeliveryId,
       input.chatwootSignature,
       input.chatwootTimestamp,

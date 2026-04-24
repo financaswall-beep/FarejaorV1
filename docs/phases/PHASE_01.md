@@ -5,7 +5,7 @@
 - F1-04 fixtures/testes base: concluida.
 - F1-01 webhook ingestion: concluida, validada contra Supabase e publicada.
 - F1-02 normalizacao: concluida, auditada, corrigida e publicada.
-- F1-03 admin endpoints: proxima etapa.
+- F1-03 admin endpoints: implementada no codigo local.
 
 ## Objetivo
 
@@ -47,14 +47,20 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
 - Reactions ainda sao placeholder, mas payload recebido gera `logger.warn`.
 - Validacao: 60 testes, typecheck e build verdes.
 
+## F1-03 - resumo do fechamento
+
+- `/healthz` implementado sem auth, com check de DB.
+- `/admin/replay/:id` protegido por bearer, com reset de campos operacionais.
+- `/admin/reconcile` protegido por bearer, com janela maxima de 7 dias.
+- Cliente Chatwoot usa `fetch` nativo, timeout de 10s e retry em 429/5xx.
+- Reconcile injeta somente raw_events sinteticos e usa `raw.delivery_seen` para dedup.
+- Validacao local: 95 testes, typecheck e build verdes.
+
 ## Criterios restantes para concluir a Fase 1
 
-1. `GET /healthz` funcional.
-2. `/admin/replay/:id` protegido por bearer e capaz de reprocessar raw_event.
-3. `/admin/reconcile` injeta raw_events sinteticos sem duplicar.
-4. Replay real confirma idempotencia em `core.*`.
-5. Worker e replay seguem sem escrita em `analytics.*` ou `ops.enrichment_jobs`.
-6. Teste/validacao com Postgres real cobre pelo menos: replay, mensagem fora de ordem, attachment, status change e dedup.
+1. Teste manual/integracao com Chatwoot real para `/admin/reconcile`.
+2. Validacao real em Supabase cobrindo replay, mensagem fora de ordem, attachment, status change e dedup.
+3. Shadow mode com webhooks reais por periodo combinado.
 
 ## Fim da Fase 1
 
