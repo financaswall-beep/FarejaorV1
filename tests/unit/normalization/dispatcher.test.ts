@@ -13,21 +13,25 @@ function createMockClient(): {
   query: ReturnType<typeof vi.fn>;
 } {
   return {
-    query: vi.fn().mockResolvedValue({ rows: [{ id: 'uuid-1' }] }),
+    query: vi.fn().mockResolvedValue({
+      rows: [{ id: 'uuid-1', conversation_id: 'conversation-uuid' }],
+    }),
   };
 }
 
 const environment = 'prod';
 const lastEventAt = new Date('2026-04-23T12:00:00Z');
+let loggerWarn: ReturnType<typeof vi.fn>;
 
 describe('dispatcher', () => {
   beforeEach(() => {
     vi.resetModules();
+    loggerWarn = vi.fn();
     Object.assign(process.env, baseEnv);
     vi.doMock('pino', () => ({
       default: vi.fn(() => ({
         info: vi.fn(),
-        warn: vi.fn(),
+        warn: loggerWarn,
         error: vi.fn(),
       })),
     }));
@@ -200,6 +204,29 @@ describe('dispatcher', () => {
       (c[0] as string).includes('INSERT INTO core.message_attachments'),
     );
     expect(attUpsert).toBeDefined();
+    expect(attUpsert?.[1]?.[3]).toBe('conversation-uuid');
+  });
+
+  it('warns when reaction payload is present but the mapper is still a placeholder', async () => {
+    const { dispatch } = await loadDispatcher();
+    const client = createMockClient();
+    const messageCreated = (await import('../../fixtures/chatwoot/message_created.json')).default;
+
+    await dispatch(client as unknown as import('pg').PoolClient, {
+      id: 8,
+      event_type: 'message_created',
+      payload: {
+        ...messageCreated,
+        reactions: [{ emoji: ':thumbsup:', reactor_id: 42, reactor_type: 'agent' }],
+      },
+      environment,
+      chatwoot_timestamp: lastEventAt,
+    });
+
+    expect(loggerWarn).toHaveBeenCalledWith(
+      { raw_event_id: 8, event_type: 'message_created' },
+      'reaction payload received but mapper is placeholder',
+    );
   });
 
   it('throws SkipEventError for unknown event types', async () => {

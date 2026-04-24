@@ -1,24 +1,63 @@
-# F1-02 — Worker de normalização raw → core
+# F1-02 - Worker de normalizacao raw -> core
+
+## Status
+
+Concluida e publicada em `main`.
+
+Commit base da entrega: `d337c73 feat: implement F1-02 deterministic normalization`.
+Patch final de hardening aplicado depois da auditoria Opus/Codex:
+
+- `upsertMessage()` retorna `{ messageId, conversationId }`.
+- `upsertAttachment()` recebe `conversationId` UUID direto, sem subselect para `core.conversations`.
+- Payloads de reaction nao somem silenciosamente: enquanto `reaction.mapper` for placeholder, o dispatcher loga `warn`.
+- Log de event type desconhecido usa ASCII para evitar renderizacao ruim em consoles Windows.
+- Validacao local: `npm test` 60/60, `npm run typecheck`, `npm run build`.
 
 ## Objetivo
+
 Ler `raw.raw_events` com `processing_status='pending'` e popular as tabelas `core.*`
 via upsert idempotente com watermark de ordem.
 
-## Escopo
+## Escopo entregue
 
-**Inclui:**
-- Loop worker em `src/normalization/worker.ts` que puxa pending, normaliza, marca
-  processed/failed
-- Mapeadores por entidade em `src/normalization/*.mapper.ts`
-- Repositories com upsert em `src/persistence/*.repository.ts`
-- Dispatcher por event_type em `src/normalization/dispatcher.ts`
+- Worker em `src/normalization/worker.ts`.
+- Dispatcher por `event_type` em `src/normalization/dispatcher.ts`.
+- Mappers deterministicos em `src/normalization/*.mapper.ts`.
+- Repositories de escrita em `src/persistence/*.repository.ts`.
+- Boot do worker no mesmo processo HTTP em `src/app/server.ts`.
+- Testes unitarios de normalizacao, dispatcher, worker e repositories.
 
-**Não inclui:**
-- Escrita em `analytics.*`
-- Escrita em `ops.enrichment_jobs` (fica pra Fase 2 — worker só popula core)
-- Endpoints admin (F1-03)
+## Invariantes confirmadas
 
-## Arquivos que pode criar/editar
+- Sem escrita em `analytics.*`.
+- Sem escrita em `ops.enrichment_jobs`.
+- Sem chamada LLM.
+- Sem chamada externa.
+- `raw.raw_events` continua sendo gravado primeiro pela F1-01.
+- Normalizacao roda assincronamente depois da persistencia raw.
+- Worker usa `FOR UPDATE SKIP LOCKED`.
+- Cada raw_event processado tem sua propria transacao.
+- `SAVEPOINT normalize_event` e intencional: em caso de erro no dispatch, desfaz writes parciais em `core.*`, mantem o lock do raw_event e permite marcar a linha como `failed` na mesma transacao.
+
+## Comportamento implementado
+
+- `contact_created` / `contact_updated` -> `core.contacts`.
+- `conversation_created` / `conversation_updated` / `conversation_status_changed` -> `core.conversations`, status events, assignments e tags quando aplicavel.
+- `message_created` / `message_updated` -> `core.messages`, attachments e reactions quando aplicavel.
+- Mensagem fora de ordem cria uma conversa minima antes do insert em `core.messages`.
+- A conversa minima nasce com `last_event_at = NULL`, permitindo que um evento completo posterior preencha a linha.
+- `sender_type` e normalizado para valores aceitos pelo banco; fallback seguro: `system`.
+- Eventos desconhecidos viram `skipped`.
+- Erros de normalizacao viram `failed` com `processing_error`.
+
+## Pontos deliberadamente deixados para F1-03
+
+- Teste de integracao real com Supabase para replay, idempotencia e `SKIP LOCKED` concorrente.
+- Reprocessamento administrativo via endpoint.
+- Reconcile via API Chatwoot.
+- Implementacao real de reactions, caso o Chatwoot passe a enviar payloads relevantes.
+
+## Arquivos principais
 
 - `src/normalization/worker.ts`
 - `src/normalization/dispatcher.ts`
@@ -38,112 +77,34 @@ via upsert idempotente com watermark de ordem.
 - `src/persistence/assignments.repository.ts`
 - `src/persistence/reactions.repository.ts`
 - `src/persistence/tags.repository.ts`
-- `src/app/server.ts` (apenas para boot do worker em paralelo ao HTTP)
+- `tests/unit/normalization/*`
+- `tests/unit/persistence/*`
 
-## Arquivos que NÃO deve mexer
+## Checklist final
 
-- `src/shared/types/chatwoot.ts` (importar, nunca alterar)
-- `db/migrations/**`
-- `src/webhooks/**` (handler já existe; não mexer)
-- `package.json`
-- Qualquer coisa em `src/admin/`
+- [x] Worker boota junto com HTTP.
+- [x] Worker puxa pending com `FOR UPDATE SKIP LOCKED`.
+- [x] Dispatcher roteia por event_type.
+- [x] Mapper de contact implementado.
+- [x] Mapper de conversation implementado.
+- [x] Mapper de message implementado.
+- [x] Mapper de attachment implementado.
+- [x] Mapper de status event implementado.
+- [x] Mapper de assignment implementado.
+- [x] Mapper de reaction implementado como placeholder rastreavel.
+- [x] Mapper de tag implementado.
+- [x] Upserts com watermark em contacts/conversations/messages.
+- [x] Upserts idempotentes nas demais tabelas.
+- [x] Erro em linha marca `failed` com `processing_error`.
+- [x] Sucesso marca `processed` com `processed_at`.
+- [x] Event type desconhecido marca `skipped`.
+- [x] Attachments usam o UUID de conversa retornado pelo upsert da mensagem.
+- [x] Reactions placeholder geram `logger.warn`.
 
-## Alertas de auditoria F1-04 (ler antes de implementar)
+## Validacao
 
-Dois problemas encontrados nos fixtures sintéticos que afetam diretamente os mappers:
-
-1. **`sender_type` vem como "Contact" (C maiúsculo) no Chatwoot real às vezes.**
-   O banco tem `CHECK (sender_type IN ('contact', 'user', 'agent_bot', 'system'))` — só
-   aceita lowercase. O mapper **obrigatoriamente** deve normalizar:
-   ```ts
-   sender_type: payload.sender_type?.toLowerCase() ?? 'unknown'
-   ```
-
-2. **`sender` pode vir como `{}` vazio ou ausente.** O mapper não pode assumir que
-   `sender.id` ou `sender.type` existem. Sempre usar optional chaining e fallback para
-   `sender_id` via `payload.sender_id` direto quando `sender` for vazio.
-
-## Regras específicas
-
-1. **Upsert sempre idempotente**. Use `INSERT ... ON CONFLICT (env, chatwoot_<entity>_id) DO UPDATE`.
-2. **Watermark obrigatório**. Todo upsert em `core.contacts/conversations/messages`
-   inclui `last_event_at` (valor = `X-Chatwoot-Timestamp` do raw event ou `updated_at`
-   do payload). O trigger `core.skip_stale_update` já barra regressão — sua
-   responsabilidade é passar o valor.
-3. **Redundância defensiva** no SQL: use `WHERE EXCLUDED.last_event_at >= core.X.last_event_at`
-   no `DO UPDATE`. Trigger + WHERE = dupla proteção.
-4. **Mapeamento 1:1 e puro**. Mapper recebe payload + metadata, retorna shape pro
-   repository. Nenhum I/O dentro do mapper.
-5. **Dispatcher por `event_type`**:
-   - `contact_created` / `contact_updated` → contact.mapper + contacts.repo
-   - `conversation_created` / `conversation_updated` / `conversation_status_changed` →
-     conversation.mapper + conversations.repo (+ status-event quando status muda)
-   - `message_created` / `message_updated` → message.mapper + messages.repo (+ attachments
-     se houver)
-6. **Erro não para o worker**. Falha em uma linha = marca `failed` com `processing_error`
-   e `processed_at = now()`, segue pra próxima.
-7. **Worker puxa em lotes**. `SELECT ... WHERE processing_status='pending' ORDER BY received_at LIMIT 50 FOR UPDATE SKIP LOCKED`.
-8. **Marca processed** quando todas as escritas em `core.*` daquele evento concluíram
-   com sucesso (transação única por raw_event).
-9. **Sem chamada de LLM. Sem chamada externa. Sem transcrição.** Tudo determinístico.
-10. Se o dispatcher recebe `event_type` desconhecido → marca `skipped`, loga warn.
-
-## Contratos de upsert (referência)
-
-```sql
--- contacts
-INSERT INTO core.contacts (environment, chatwoot_contact_id, name, phone_e164, ..., last_event_at)
-VALUES ($1, $2, $3, $4, ..., $N)
-ON CONFLICT (environment, chatwoot_contact_id) DO UPDATE
-SET name = EXCLUDED.name,
-    phone_e164 = EXCLUDED.phone_e164,
-    ...,
-    last_event_at = EXCLUDED.last_event_at,
-    updated_at = now()
-WHERE EXCLUDED.last_event_at >= core.contacts.last_event_at;
+```text
+npm test           -> 60/60 passando
+npm run typecheck  -> verde
+npm run build      -> verde
 ```
-
-Mesmo padrão para `conversations` e `messages`. Para tabelas sem watermark
-(`message_attachments`, `conversation_tags`, `conversation_status_events`,
-`conversation_assignments`, `message_reactions`) use upsert direto sem watermark —
-essas são append-only ou têm chave natural única.
-
-## Checklist
-
-- [ ] Worker boota junto com HTTP (mesmo processo, Fase 1) ou como job separado
-      chamando o mesmo bundle
-- [ ] Worker puxa pending com `FOR UPDATE SKIP LOCKED`
-- [ ] Dispatcher roteia por event_type
-- [ ] Mapper de contact implementado
-- [ ] Mapper de conversation implementado
-- [ ] Mapper de message implementado
-- [ ] Mapper de attachment implementado
-- [ ] Mapper de status event implementado
-- [ ] Mapper de assignment implementado
-- [ ] Mapper de reaction implementado
-- [ ] Mapper de tag implementado
-- [ ] Upserts com watermark em contacts/conversations/messages
-- [ ] Upserts idempotentes em todas as demais
-- [ ] Erro em linha marca `failed` com `processing_error` não vazio
-- [ ] Sucesso marca `processed` com `processed_at`
-- [ ] event_type desconhecido marca `skipped`
-
-## Critérios de aceite
-
-1. Evento `message_created` em raw → aparece em `core.messages` com `message_type_name`
-   correto e `last_event_at` populado.
-2. Evento `message_updated` do mesmo `chatwoot_message_id` com timestamp maior →
-   atualiza a linha.
-3. Evento `message_updated` com timestamp menor que o atual → UPDATE vira no-op
-   (trigger dispara NOTICE, linha não muda).
-4. Evento `contact_created` seguido de `contact_updated` → `core.contacts` tem 1 linha
-   com dados do update.
-5. Evento `conversation_status_changed` → gera linha em `core.conversation_status_events`
-   **e** atualiza `core.conversations.current_status`.
-6. Evento com payload inválido → marca `failed` com mensagem legível, worker segue.
-7. `raw.raw_events` com `processing_status='processed'` não é re-processado.
-8. Dois workers rodando em paralelo não pegam o mesmo raw_event (SKIP LOCKED).
-
-## Formato obrigatório de resposta
-
-Mesmo formato de F1-01 (arquivos / checklist / pendências / riscos).

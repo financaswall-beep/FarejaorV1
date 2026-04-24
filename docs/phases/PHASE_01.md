@@ -1,80 +1,62 @@
-# Fase 1 — Farejador determinístico (MVP)
+# Fase 1 - Farejador deterministico (MVP)
+
+## Status atual
+
+- F1-04 fixtures/testes base: concluida.
+- F1-01 webhook ingestion: concluida, validada contra Supabase e publicada.
+- F1-02 normalizacao: concluida, auditada, corrigida e publicada.
+- F1-03 admin endpoints: proxima etapa.
 
 ## Objetivo
 
 Receber webhooks do Chatwoot, validar autenticidade, deduplicar, persistir payload
-bruto e normalizar para as tabelas operacionais (`core.*`). Tudo determinístico,
-zero LLM.
+bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero LLM.
 
-## Entregáveis
+## Entregaveis da Fase 1
 
-- Endpoint HTTP `POST /webhooks/chatwoot` com:
-  - validação HMAC via `X-Chatwoot-Signature`
-  - rejeição de timestamps muito antigos
-  - deduplicação via `raw.delivery_seen`
-  - persistência em `raw.raw_events` (partitioned)
-  - resposta 2xx rápida, normalização async
-- Worker de normalização que lê `raw.raw_events` em `pending` e popula:
-  - `core.contacts`
-  - `core.conversations`
-  - `core.messages` (partitioned)
-  - `core.message_attachments`
-  - `core.conversation_tags`
-  - `core.conversation_status_events`
-  - `core.conversation_assignments`
-  - `core.message_reactions`
-- Endpoints admin com auth bearer simples:
-  - `GET /healthz`
-  - `POST /admin/replay/:raw_event_id`
-  - `POST /admin/reconcile` (backfill via API Chatwoot)
-- Suite de testes com fixtures reais do Chatwoot
+- Endpoint HTTP `POST /webhooks/chatwoot`.
+- Persistencia em `raw.raw_events`.
+- Dedup via `raw.delivery_seen`.
+- Worker async de normalizacao para `core.*`.
+- Endpoints admin de health, replay e reconcile.
+- Testes com fixtures sinteticas representativas.
 
 ## Fora de escopo
 
-- Qualquer escrita em `analytics.*`
-- Qualquer chamada de LLM (classificação, transcrição, extração)
-- Dashboard ou UI
-- Transcrição de áudio
-- `ops.stock_snapshots`, `ops.bot_events` (tabelas permanecem vazias)
-- Multi-tenant
-- Observability avançada (métricas Prometheus, tracing) — só logs estruturados
+- Escrita em `analytics.*`.
+- Chamada de LLM.
+- Agente conversacional.
+- Dashboard/UI.
+- Transcricao de audio.
+- Microservicos.
 
-## Tasks
+## Ordem de execucao
 
-| ID | Título | Arquivo |
-|----|--------|---------|
-| F1-01 | Webhook end-to-end | `docs/tasks/F1-01-webhook.md` |
-| F1-02 | Worker de normalização | `docs/tasks/F1-02-normalization.md` |
-| F1-03 | Endpoints admin | `docs/tasks/F1-03-admin.md` |
-| F1-04 | Fixtures + testes mínimos | `docs/tasks/F1-04-tests.md` |
+1. F1-04 - Fixtures e testes base.
+2. F1-01 - Webhook end-to-end.
+3. F1-02 - Worker de normalizacao.
+4. F1-03 - Endpoints admin.
 
-**Ordem recomendada**: F1-04 (fixtures) → F1-01 (webhook) → F1-02 (normalização) → F1-03 (admin).
+## F1-02 - resumo do fechamento
 
-Fixtures primeiro porque as tasks 01 e 02 se beneficiam de testes desde o começo.
+- Worker usa `FOR UPDATE SKIP LOCKED`.
+- Cada raw_event tem transacao propria.
+- `SAVEPOINT normalize_event` e intencional para desfazer writes parciais e ainda marcar `failed`.
+- Mensagens fora de ordem criam stub de conversa.
+- Attachments recebem o UUID de conversa retornado por `upsertMessage`.
+- Reactions ainda sao placeholder, mas payload recebido gera `logger.warn`.
+- Validacao: 60 testes, typecheck e build verdes.
 
-## Pré-requisitos (antes de F1-01 começar)
+## Criterios restantes para concluir a Fase 1
 
-- [ ] Migrations `0001`–`0006` aplicadas no Supabase
-- [x] `src/shared/types/chatwoot.ts` criado e revisado (stub em `docs/` já gerado)
-- [x] `package.json`, `tsconfig.json`, `.env.example`, `.gitignore` no repo
-- [x] `docs/KIMI_RULES.md` anexado em todo prompt de task
+1. `GET /healthz` funcional.
+2. `/admin/replay/:id` protegido por bearer e capaz de reprocessar raw_event.
+3. `/admin/reconcile` injeta raw_events sinteticos sem duplicar.
+4. Replay real confirma idempotencia em `core.*`.
+5. Worker e replay seguem sem escrita em `analytics.*` ou `ops.enrichment_jobs`.
+6. Teste/validacao com Postgres real cobre pelo menos: replay, mensagem fora de ordem, attachment, status change e dedup.
 
-## Critérios de aceite da Fase 1
+## Fim da Fase 1
 
-A Fase 1 está pronta quando:
-
-1. Um evento Chatwoot real chega no webhook → linha aparece em `raw.raw_events` em < 500ms
-2. O mesmo evento duplicado (mesmo `X-Chatwoot-Delivery`) **não** gera segunda linha
-3. Assinatura HMAC inválida → resposta 401, zero escrita
-4. Timestamp > 5 min → resposta 401, zero escrita
-5. Worker pega pending → popula `core.*` com watermark correto
-6. Evento fora de ordem → linha mais antiga é ignorada (trigger `skip_stale_update`)
-7. `/admin/replay/:id` reprocessa uma linha `failed` → vira `processed`
-8. `/admin/reconcile` com janela de datas → traz conversas faltantes via API
-9. Suite de testes passa (Vitest) com fixtures reais de cada event_type
-10. Tempo médio de resposta do webhook < 200ms em staging
-
-## O que marca fim da Fase 1
-
-Deploy em staging recebendo webhooks reais do Chatwoot de produção (shadow mode)
-por **pelo menos 7 dias** sem perdas detectadas na reconciliação.
+A Fase 1 termina quando F1-03 estiver implementada e um periodo de shadow mode com
+webhooks reais nao mostrar perdas ou duplicacoes relevantes.

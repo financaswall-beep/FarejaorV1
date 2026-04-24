@@ -29,7 +29,9 @@ function createMessage(overrides: Partial<MappedMessage> = {}): MappedMessage {
 describe('messages.repository', () => {
   it('creates a minimal parent conversation before inserting a message', async () => {
     const client = {
-      query: vi.fn().mockResolvedValue({ rows: [{ id: 'message-uuid' }] }),
+      query: vi.fn().mockResolvedValue({
+        rows: [{ id: 'message-uuid', conversation_id: 'conversation-uuid' }],
+      }),
     };
 
     await upsertMessage(client as never, createMessage());
@@ -39,6 +41,7 @@ describe('messages.repository', () => {
     expect(sql).toContain('INSERT INTO core.conversations');
     expect(sql).toContain("VALUES ($1, $3, $16, $17, 'open', $14, NULL)");
     expect(sql).toContain('INSERT INTO core.messages');
+    expect(sql).toContain('RETURNING id, conversation_id');
     expect(sql).not.toContain('updated_at = now()');
     expect(params[15]).toBe(1);
     expect(params[16]).toBe(5);
@@ -49,14 +52,22 @@ describe('messages.repository', () => {
       query: vi
         .fn()
         .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [{ id: 'existing-message-uuid' }] }),
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'existing-message-uuid',
+              conversation_id: 'existing-conversation-uuid',
+            },
+          ],
+        }),
     };
 
-    await expect(upsertMessage(client as never, createMessage())).resolves.toBe(
-      'existing-message-uuid',
-    );
+    await expect(upsertMessage(client as never, createMessage())).resolves.toEqual({
+      messageId: 'existing-message-uuid',
+      conversationId: 'existing-conversation-uuid',
+    });
 
-    expect(client.query.mock.calls[1][0]).toContain('SELECT id');
+    expect(client.query.mock.calls[1][0]).toContain('SELECT id, conversation_id');
     expect(client.query.mock.calls[1][0]).toContain('FROM core.messages');
   });
 });

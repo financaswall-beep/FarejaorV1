@@ -1,11 +1,16 @@
 import type { PoolClient } from 'pg';
 import type { MappedMessage } from '../normalization/message.mapper.js';
 
+export interface UpsertedMessage {
+  messageId: string;
+  conversationId: string;
+}
+
 export async function upsertMessage(
   client: PoolClient,
   message: MappedMessage,
-): Promise<string> {
-  const result = await client.query<{ id: string }>(
+): Promise<UpsertedMessage> {
+  const result = await client.query<{ id: string; conversation_id: string }>(
     `WITH ensured_conversation AS (
       INSERT INTO core.conversations (
         environment,
@@ -51,7 +56,7 @@ export async function upsertMessage(
         last_event_at = EXCLUDED.last_event_at
     WHERE core.messages.last_event_at IS NULL
        OR EXCLUDED.last_event_at >= core.messages.last_event_at
-    RETURNING id`,
+    RETURNING id, conversation_id`,
     [
       message.environment,
       message.chatwootMessageId,
@@ -73,13 +78,16 @@ export async function upsertMessage(
     ],
   );
 
-  const returnedId = result.rows[0]?.id;
-  if (returnedId) {
-    return returnedId;
+  const returned = result.rows[0];
+  if (returned?.id && returned.conversation_id) {
+    return {
+      messageId: returned.id,
+      conversationId: returned.conversation_id,
+    };
   }
 
-  const existing = await client.query<{ id: string }>(
-    `SELECT id
+  const existing = await client.query<{ id: string; conversation_id: string }>(
+    `SELECT id, conversation_id
      FROM core.messages
      WHERE environment = $1
        AND chatwoot_message_id = $2
@@ -87,10 +95,13 @@ export async function upsertMessage(
     [message.environment, message.chatwootMessageId, message.sentAt],
   );
 
-  const existingId = existing.rows[0]?.id;
-  if (!existingId) {
+  const existingRow = existing.rows[0];
+  if (!existingRow?.id || !existingRow.conversation_id) {
     throw new Error(`core.messages id not found for chatwoot_message_id=${message.chatwootMessageId}`);
   }
 
-  return existingId;
+  return {
+    messageId: existingRow.id,
+    conversationId: existingRow.conversation_id,
+  };
 }

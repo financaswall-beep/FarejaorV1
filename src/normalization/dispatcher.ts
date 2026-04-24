@@ -134,7 +134,7 @@ export async function dispatch(
     case 'message_created':
     case 'message_updated': {
       const message = mapMessage(payload, environment, lastEventAt);
-      const messageId = await upsertMessage(client, message);
+      const upsertedMessage = await upsertMessage(client, message);
 
       const attachments = (payload.attachments ?? []) as Array<
         Record<string, unknown>
@@ -144,9 +144,8 @@ export async function dispatch(
         await upsertAttachment(
           client,
           attachment,
-          messageId,
-          message.chatwootConversationId,
-          environment,
+          upsertedMessage.messageId,
+          upsertedMessage.conversationId,
         );
       }
 
@@ -156,7 +155,12 @@ export async function dispatch(
       for (const reactionPayload of reactions) {
         const reaction = mapReaction(reactionPayload, environment, lastEventAt);
         if (reaction) {
-          await insertReaction(client, reaction, messageId);
+          await insertReaction(client, reaction, upsertedMessage.messageId);
+        } else {
+          logger.warn(
+            { raw_event_id: rawEventId, event_type: eventType },
+            'reaction payload received but mapper is placeholder',
+          );
         }
       }
 
@@ -166,7 +170,7 @@ export async function dispatch(
     default: {
       logger.warn(
         { event_type: eventType, raw_event_id: rawEventId },
-        'unknown event type — marking as skipped',
+        'unknown event type - marking as skipped',
       );
       throw new SkipEventError(eventType);
     }

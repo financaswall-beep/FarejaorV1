@@ -1,52 +1,57 @@
-# Farejador - Visão do Projeto
+# Farejador - Visao do Projeto
 
-Sistema de captura determinística de conversas do Chatwoot (WhatsApp, Instagram, Facebook)
-para Supabase Postgres. Objetivo: construir a base de dados estruturada que vai alimentar
-analytics de negócio e, no futuro, um agente conversacional LLM. O Farejador em si **não é**
-o agente; é a fundação.
+Sistema de captura deterministica de conversas do Chatwoot para Supabase Postgres.
+O objetivo e construir a base de dados estruturada que vai alimentar analytics de
+negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 
 ## Fases
 
 | Fase | Nome | Resumo |
-|------|------|--------|
-| 1 | Farejador determinístico | Webhook -> HMAC -> dedup -> raw -> core. Zero LLM. |
-| 2a | Enrichment determinístico | Workers com SQL/regex populando analytics. Zero LLM. |
-| 2b | Enrichment com LLM | Workers LLM populando só `analytics.*`. |
-| 3 | Agente atendente | Serviço separado, read-only sobre `core + analytics`. |
-| 4 | (parked) | Treino de LLM próprio. Fora do plano ativo. |
+| --- | --- | --- |
+| 1 | Farejador deterministico | Webhook, dedup, raw, normalizacao em core e admin replay. Zero LLM. |
+| 2a | Enrichment deterministico | Workers SQL/regex populando `analytics.*`. Zero LLM. |
+| 2b | Enrichment com LLM | Workers LLM populando somente `analytics.*`. |
+| 3 | Agente atendente | Servico separado, read-only sobre `core.*` e `analytics.*`. |
 
-## Invariantes inegociáveis
+## Status atual
 
-- `environment` obrigatório em toda tabela (`prod` / `test`).
-- Dedup obrigatório por `X-Chatwoot-Delivery` antes de gravar em `raw.raw_events`, usando `raw.delivery_seen`.
-- `raw.raw_events` é particionada por `received_at`; a unicidade operacional do delivery fica em `raw.delivery_seen`.
-- `raw.raw_events` é imutável após insert. Só se atualiza `processing_status`.
-- Watermark `last_event_at` em `core.*`; evento antigo não sobrescreve novo.
-- LLM **nunca** escreve em `raw.*` ou `core.*`. Só em `analytics.*`.
-- Dados observados (`core.*`) e inferidos (`analytics.*`) não se misturam.
-- Proveniência (`source`, `extractor_version`, `confidence_level`, `truth_type`) só em `analytics.*`.
-- Schema técnico em inglês. Conteúdo das conversas preservado no idioma original (pt-BR).
+- F1-01 webhook ingestion: concluida e validada contra Supabase.
+- F1-02 normalizacao deterministica: concluida, auditada e validada com 60 testes.
+- F1-03 admin endpoints: proxima etapa.
+
+## Invariantes
+
+- `environment` obrigatorio em toda tabela relevante.
+- Producao e teste nunca se misturam.
+- Dedup por `X-Chatwoot-Delivery` antes de gravar raw.
+- `raw.raw_events` preserva payload bruto para auditoria e replay.
+- Normalizacao estrutural escreve em `core.*`.
+- Dados interpretados escrevem somente em `analytics.*`.
+- LLM nunca escreve em `raw.*` ou `core.*`.
+- Fase 1 nao chama LLM.
+- Fase 1 nao popula `ops.enrichment_jobs`.
+
+## Decisoes recentes da F1-02
+
+- `upsertMessage()` devolve o UUID da mensagem e o UUID da conversa.
+- Attachments usam o UUID de conversa ja resolvido, sem subselect fragil.
+- `reaction.mapper` continua placeholder, mas payload de reaction gera `logger.warn`.
+- `SAVEPOINT normalize_event` no worker e intencional para marcar falha sem soltar lock.
 
 ## Stack
 
-- TypeScript + Node.js 20
-- Fastify (HTTP)
-- Zod (validação)
-- Supabase Postgres (direct `pg` driver, não o SDK)
-- Pino (logging)
-- Vitest (testes)
+- TypeScript + Node.js
+- Fastify
+- Zod
+- Supabase Postgres via `pg`
+- Pino
+- Vitest
 
-## Escopo do MVP (Fase 1)
+## Referencias
 
-Popula apenas: `raw.raw_events`, `core.*` e `ops.erasure_log` (quando houver requisição LGPD).
-`ops.enrichment_jobs` existe no schema, mas não é populada na Fase 1.
-
-**Fora da Fase 1**: analytics, enrichment, transcrição, agente conversacional, dashboard.
-
-## Referências
-
-- `AGENTS.md` - regras operacionais para agentes de IA no repo.
-- `db/migrations/README.md` - fases de população por tabela + regras de concorrência.
-- `docs/KIMI_RULES.md` - regras obrigatórias para o executor Kimi K2.
-- `docs/phases/PHASE_01.md` - escopo detalhado da Fase 1.
-- `docs/adr/` - decisões arquiteturais registradas.
+- `AGENTS.md`
+- `db/migrations/README.md`
+- `docs/KIMI_RULES.md`
+- `docs/phases/PHASE_01.md`
+- `docs/tasks/F1-03-admin.md`
+- `docs/adr/`
