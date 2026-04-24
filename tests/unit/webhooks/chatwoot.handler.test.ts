@@ -16,6 +16,13 @@ interface MockClient {
   release: ReturnType<typeof vi.fn>;
 }
 
+interface RequestOptions {
+  deliveryId?: string;
+  signatureOverride?: string;
+  timestamp?: string;
+  omitTimestamp?: boolean;
+}
+
 function createReply(): FastifyReply {
   const reply = {
     statusCode: 200,
@@ -33,29 +40,35 @@ function createReply(): FastifyReply {
   return reply as unknown as FastifyReply;
 }
 
-function createRequest(payload: unknown, signatureOverride?: string): FastifyRequest {
+function createRequest(payload: unknown, options: RequestOptions = {}): FastifyRequest {
   const raw = Buffer.from(JSON.stringify(payload));
   const signature =
-    signatureOverride ?? createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(raw).digest('hex');
+    options.signatureOverride ?? createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(raw).digest('hex');
+  const headers: Record<string, string> = {
+    'x-chatwoot-signature': signature,
+    'x-chatwoot-delivery': options.deliveryId ?? 'delivery-1',
+  };
+
+  if (!options.omitTimestamp) {
+    headers['x-chatwoot-timestamp'] = options.timestamp ?? String(Math.floor(Date.now() / 1000));
+  }
 
   return {
     body: { raw, parsed: payload },
-    headers: {
-      'x-chatwoot-signature': signature,
-      'x-chatwoot-delivery': 'delivery-1',
-      'x-chatwoot-timestamp': String(Math.floor(Date.now() / 1000)),
-    },
+    headers,
   } as unknown as FastifyRequest;
 }
 
-async function loadHandler(client: MockClient): Promise<{
+async function loadHandler(clientOrError: MockClient | Error): Promise<{
   handler: typeof import('../../../src/webhooks/chatwoot.handler').chatwootWebhookHandler;
   connect: ReturnType<typeof vi.fn>;
 }> {
   vi.resetModules();
   Object.assign(process.env, baseEnv);
 
-  const connect = vi.fn().mockResolvedValue(client);
+  const connect = clientOrError instanceof Error
+    ? vi.fn().mockRejectedValue(clientOrError)
+    : vi.fn().mockResolvedValue(clientOrError);
   vi.doMock('pino', () => ({
     default: vi.fn(() => ({
       info: vi.fn(),
@@ -87,9 +100,7 @@ describe('chatwootWebhookHandler', () => {
       query: vi
         .fn()
         .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rowCount: 1 })
         .mockResolvedValueOnce({ rows: [{ id: 123 }] })
-        .mockResolvedValueOnce({ rowCount: 1 })
         .mockResolvedValueOnce({ rows: [] }),
       release: vi.fn(),
     };
@@ -113,7 +124,7 @@ describe('chatwootWebhookHandler', () => {
       query: vi
         .fn()
         .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
         .mockResolvedValueOnce({ rows: [] }),
       release: vi.fn(),
     };
@@ -137,7 +148,44 @@ describe('chatwootWebhookHandler', () => {
     const reply = createReply();
 
     await handler(
-      createRequest({ event: 'message_created', account: { id: 1 }, id: 1001 }, '0'.repeat(64)),
+      createRequest(
+        { event: 'message_created', account: { id: 1 }, id: 1001 },
+        { signatureOverride: '0'.repeat(64) },
+      ),
+      reply,
+    );
+
+    expect(reply.statusCode).toBe(401);
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing timestamps before touching the database', async () => {
+    const client: MockClient = { query: vi.fn(), release: vi.fn() };
+    const { handler, connect } = await loadHandler(client);
+    const reply = createReply();
+
+    await handler(
+      createRequest(
+        { event: 'message_created', account: { id: 1 }, id: 1001 },
+        { omitTimestamp: true },
+      ),
+      reply,
+    );
+
+    expect(reply.statusCode).toBe(401);
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('rejects expired timestamps before touching the database', async () => {
+    const client: MockClient = { query: vi.fn(), release: vi.fn() };
+    const { handler, connect } = await loadHandler(client);
+    const reply = createReply();
+
+    await handler(
+      createRequest(
+        { event: 'message_created', account: { id: 1 }, id: 1001 },
+        { timestamp: '1' },
+      ),
       reply,
     );
 
@@ -154,5 +202,40 @@ describe('chatwootWebhookHandler', () => {
 
     expect(reply.statusCode).toBe(400);
     expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 and rolls back when raw persistence fails', async () => {
+    const client: MockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockRejectedValueOnce(new Error('insert failed'))
+        .mockResolvedValueOnce({ rows: [] }),
+      release: vi.fn(),
+    };
+    const { handler } = await loadHandler(client);
+    const reply = createReply();
+
+    await handler(
+      createRequest({ event: 'message_created', account: { id: 1 }, id: 1001 }),
+      reply,
+    );
+
+    expect(reply.statusCode).toBe(500);
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it('returns 500 when the database connection fails', async () => {
+    const { handler, connect } = await loadHandler(new Error('connect failed'));
+    const reply = createReply();
+
+    await handler(
+      createRequest({ event: 'message_created', account: { id: 1 }, id: 1001 }),
+      reply,
+    );
+
+    expect(reply.statusCode).toBe(500);
+    expect(connect).toHaveBeenCalledOnce();
   });
 });

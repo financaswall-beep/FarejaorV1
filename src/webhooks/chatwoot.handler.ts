@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { PoolClient } from 'pg';
 import { pool } from '../persistence/db.js';
-import { claimDelivery, linkDeliveryToRawEvent } from '../persistence/delivery-seen.repository.js';
-import { insertRawEvent } from '../persistence/raw-events.repository.js';
+import { claimAndInsertRawEvent } from '../persistence/raw-events.repository.js';
 import { env } from '../shared/config/env.js';
 import { logger } from '../shared/logger.js';
 import { chatwootWebhookEnvelopeSchema, chatwootWebhookHeadersSchema } from '../shared/types/chatwoot.js';
@@ -77,19 +77,13 @@ export async function chatwootWebhookHandler(
     event_type: eventType,
   };
 
-  const client = await pool.connect();
+  let client: PoolClient | null = null;
 
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
 
-    const claimed = await claimDelivery(client, chatwootDeliveryId);
-    if (!claimed) {
-      await client.query('ROLLBACK');
-      logger.warn(handlerLogCtx, 'duplicate delivery skipped');
-      return reply.status(200).send({ received: true, delivery_id: chatwootDeliveryId });
-    }
-
-    const rawEventId = await insertRawEvent(client, {
+    const rawEventId = await claimAndInsertRawEvent(client, {
       chatwootDeliveryId,
       chatwootSignature,
       chatwootTimestamp: parsedTimestamp,
@@ -98,17 +92,23 @@ export async function chatwootWebhookHandler(
       payload: parsedBody,
     });
 
-    await linkDeliveryToRawEvent(client, chatwootDeliveryId, rawEventId);
+    if (!rawEventId) {
+      await client.query('ROLLBACK');
+      logger.warn(handlerLogCtx, 'duplicate delivery skipped');
+      return reply.status(200).send({ received: true, delivery_id: chatwootDeliveryId });
+    }
 
     await client.query('COMMIT');
 
     logger.info(handlerLogCtx, 'webhook received and persisted');
     return reply.status(200).send({ received: true, delivery_id: chatwootDeliveryId });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (client) {
+      await client.query('ROLLBACK').catch(() => {});
+    }
     logger.error({ err, ...handlerLogCtx }, 'failed to persist webhook');
     return reply.status(500).send({ error: 'Internal server error' });
   } finally {
-    client.release();
+    client?.release();
   }
 }

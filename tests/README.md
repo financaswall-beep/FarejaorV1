@@ -29,7 +29,7 @@ contra Postgres real.
 npm test
 ```
 
-Criterio de aceite local: todos os testes existentes passam (verde).
+Criterio de aceite local: todos os testes existentes passam (verde). Estado atual: 21 testes.
 
 ## Dados sensiveis
 

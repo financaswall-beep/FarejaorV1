@@ -8,7 +8,6 @@ export const loggerOptions: LoggerOptions = {
     paths: [
       'req.headers.authorization',
       'req.headers["x-chatwoot-signature"]',
-      'req.headers.x-chatwoot-signature',
       'chatwoot_signature',
       '*.chatwoot_signature',
       '*.phone_number',

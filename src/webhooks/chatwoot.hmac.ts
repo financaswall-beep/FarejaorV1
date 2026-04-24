@@ -4,6 +4,7 @@ import { env } from '../shared/config/env.js';
 const allowedFutureSkewMs = 60_000;
 
 export function parseChatwootTimestamp(timestamp: string): Date | null {
+  // Chatwoot sends X-Chatwoot-Timestamp as Unix seconds, not milliseconds.
   const timestampMs = Number(timestamp) * 1000;
 
   if (!Number.isFinite(timestampMs) || timestampMs <= 0) {

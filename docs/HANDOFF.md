@@ -125,7 +125,7 @@ Entregou:
 - `tests/unit/webhooks/chatwoot.hmac.test.ts` — HMAC e timestamp
 - `tests/README.md`
 
-Resultado atual: `npm test` → **17/17 verde**.
+Resultado atual: `npm test` → **21/21 verde**.
 
 **Problema encontrado e corrigido**: `@fastify/raw-body@^5.0.0` não existe no npm.
 Removido do `package.json`. Raw body capturado via `addContentTypeParser` nativo
@@ -143,10 +143,11 @@ com ajustes de revisão.
 - Rota `POST /webhooks/chatwoot`
 - Validação HMAC (`X-Chatwoot-Signature`) com timing-safe compare
 - Rejeição de timestamp expirado (`X-Chatwoot-Timestamp` > 300s)
-- Dedup via `raw.delivery_seen` (INSERT ON CONFLICT DO NOTHING)
+- Dedup via `raw.delivery_seen` e insert em `raw.raw_events` no mesmo CTE
 - Insert em `raw.raw_events` com `processing_status='pending'`
 - Resposta 2xx rápida (normalização é async, feita em F1-02)
 - Pool `pg` em `src/persistence/db.ts`
+- SSL explícito no pool `pg` quando `DATABASE_SSL=true` ou a URL é Supabase
 - Env vars validadas com Zod em `src/shared/config/env.ts`
 - Logger pino em `src/shared/logger.ts`
 - Testes do handler em `tests/unit/webhooks/chatwoot.handler.test.ts`

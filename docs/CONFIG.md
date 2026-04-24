@@ -13,6 +13,7 @@ nunca `process.env.X` direto.
 | `PORT` | não | Porta HTTP do Fastify. Default `3000`. | `3000` |
 | `DATABASE_URL` | sim | Connection string do Supabase Postgres (via pooler em prod). | `postgresql://postgres:...@...supabase.co:6543/postgres` |
 | `DATABASE_POOL_MAX` | não | Tamanho máximo do pool `pg`. Default `10`. | `10` |
+| `DATABASE_SSL` | não | Força SSL no pool `pg`. Default `false`; URLs Supabase ativam SSL automaticamente. | `true` |
 | `CHATWOOT_HMAC_SECRET` | sim | Segredo para validar `X-Chatwoot-Signature`. | `<secret>` |
 | `CHATWOOT_WEBHOOK_MAX_AGE_SECONDS` | não | Rejeita webhooks com `X-Chatwoot-Timestamp` mais antigo que isso. Default `300`. | `300` |
 | `CHATWOOT_API_BASE_URL` | sim (admin) | URL base da API do Chatwoot para reconcile. | `https://chatwoot.example.com/api/v1` |

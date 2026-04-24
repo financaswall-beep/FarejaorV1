@@ -100,7 +100,7 @@ Legenda: ✅ Feito | ⚠️ Feito com ressalva | 🔜 Próximo | ⏳ Aguardando 
 - [x] `src/webhooks/chatwoot.hmac.ts`
 - [x] `src/persistence/db.ts`
 - [x] `src/persistence/raw-events.repository.ts`
-- [x] `src/persistence/delivery-seen.repository.ts`
+- [x] Dedup e insert raw em CTE único dentro de `src/persistence/raw-events.repository.ts`
 - [x] `src/shared/config/env.ts`
 - [x] `src/shared/logger.ts`
 - [x] `tests/unit/webhooks/chatwoot.handler.test.ts`
@@ -112,7 +112,7 @@ Legenda: ✅ Feito | ⚠️ Feito com ressalva | 🔜 Próximo | ⏳ Aguardando 
 - [x] Insert em `raw.raw_events`
 - [x] Resposta 2xx rápida, sem normalização no hot path
 - [x] Shutdown gracioso (SIGTERM/SIGINT)
-- [x] `npm test` verde com testes do handler (17/17)
+- [x] `npm test` verde com testes do handler (21/21)
 - [x] Validação end-to-end contra Postgres/Supabase com migrations aplicadas (`codex-e2e-*`)
 
 ---
