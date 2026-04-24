@@ -1,0 +1,174 @@
+import type { PoolClient } from 'pg';
+import type { ChatwootEventType } from '../shared/types/chatwoot.js';
+import { logger } from '../shared/logger.js';
+import { mapContact } from './contact.mapper.js';
+import { mapConversation } from './conversation.mapper.js';
+import { mapMessage } from './message.mapper.js';
+import { mapAttachment } from './attachment.mapper.js';
+import { mapStatusEvent } from './status-event.mapper.js';
+import { mapAssignment } from './assignment.mapper.js';
+import { mapReaction } from './reaction.mapper.js';
+import { mapTags } from './tag.mapper.js';
+import { upsertContact } from '../persistence/contacts.repository.js';
+import { upsertConversation } from '../persistence/conversations.repository.js';
+import { upsertMessage } from '../persistence/messages.repository.js';
+import { upsertAttachment } from '../persistence/attachments.repository.js';
+import { insertStatusEvent } from '../persistence/status-events.repository.js';
+import { insertAssignment } from '../persistence/assignments.repository.js';
+import { insertReaction } from '../persistence/reactions.repository.js';
+import { upsertTags } from '../persistence/tags.repository.js';
+
+export interface RawEvent {
+  id: number;
+  event_type: string;
+  payload: unknown;
+  environment: string;
+  chatwoot_timestamp: Date | null;
+}
+
+export class SkipEventError extends Error {
+  constructor(eventType: string) {
+    super(`Event type skipped: ${eventType}`);
+    this.name = 'SkipEventError';
+  }
+}
+
+export async function dispatch(
+  client: PoolClient,
+  rawEvent: RawEvent,
+): Promise<void> {
+  const eventType = rawEvent.event_type as ChatwootEventType;
+  const payload = rawEvent.payload as Record<string, unknown>;
+  const environment = rawEvent.environment;
+  const lastEventAt = rawEvent.chatwoot_timestamp ?? new Date();
+  const rawEventId = rawEvent.id;
+
+  switch (eventType) {
+    case 'contact_created':
+    case 'contact_updated': {
+      const contact = mapContact(payload, environment, lastEventAt);
+      await upsertContact(client, contact);
+      break;
+    }
+
+    case 'conversation_created':
+    case 'conversation_updated': {
+      const conversation = mapConversation(payload, environment, lastEventAt);
+      const conversationId = await upsertConversation(client, conversation);
+
+      if (payload.labels && Array.isArray(payload.labels)) {
+        const tags = mapTags(
+          payload as { id: number; labels?: string[] },
+          environment,
+          lastEventAt,
+        );
+        await upsertTags(client, tags, conversationId);
+      }
+
+      if (eventType === 'conversation_updated' && payload.changed_attributes) {
+        const changedAttrs = payload.changed_attributes as Array<{
+          attribute: string;
+          previous_value?: string;
+          current_value?: string;
+        }>;
+
+        const statusChange = changedAttrs.find((a) => a.attribute === 'status');
+        if (statusChange) {
+          const statusEvent = mapStatusEvent(
+            payload as { id: number; status?: string; updated_at?: unknown },
+            environment,
+            lastEventAt,
+            rawEventId,
+            statusChange.previous_value ?? null,
+          );
+          await insertStatusEvent(client, statusEvent, conversationId);
+        }
+
+        const assigneeChange = changedAttrs.find(
+          (a) => a.attribute === 'assignee_id',
+        );
+        if (assigneeChange && payload.assignee_id != null) {
+          const assignment = mapAssignment(
+            payload as {
+              id: number;
+              assignee_id?: number | null;
+              team_id?: number | null;
+              updated_at?: unknown;
+            },
+            environment,
+            lastEventAt,
+          );
+          if (assignment) {
+            await insertAssignment(client, assignment, conversationId);
+          }
+        }
+      }
+
+      break;
+    }
+
+    case 'conversation_status_changed': {
+      const conversation = mapConversation(payload, environment, lastEventAt);
+      const conversationId = await upsertConversation(client, conversation);
+
+      const changedAttrs = payload.changed_attributes as
+        | Array<{
+            attribute: string;
+            previous_value?: string;
+            current_value?: string;
+          }>
+        | undefined;
+      const statusChange = changedAttrs?.find((a) => a.attribute === 'status');
+
+      const statusEvent = mapStatusEvent(
+        payload as { id: number; status?: string; updated_at?: unknown },
+        environment,
+        lastEventAt,
+        rawEventId,
+        statusChange?.previous_value ?? null,
+      );
+      await insertStatusEvent(client, statusEvent, conversationId);
+      break;
+    }
+
+    case 'message_created':
+    case 'message_updated': {
+      const message = mapMessage(payload, environment, lastEventAt);
+      const messageId = await upsertMessage(client, message);
+
+      const attachments = (payload.attachments ?? []) as Array<
+        Record<string, unknown>
+      >;
+      for (const attPayload of attachments) {
+        const attachment = mapAttachment(attPayload, environment);
+        await upsertAttachment(
+          client,
+          attachment,
+          messageId,
+          message.chatwootConversationId,
+          environment,
+        );
+      }
+
+      const reactions = (payload.reactions ?? []) as Array<
+        Record<string, unknown>
+      >;
+      for (const reactionPayload of reactions) {
+        const reaction = mapReaction(reactionPayload, environment, lastEventAt);
+        if (reaction) {
+          await insertReaction(client, reaction, messageId);
+        }
+      }
+
+      break;
+    }
+
+    default: {
+      logger.warn(
+        { event_type: eventType, raw_event_id: rawEventId },
+        'unknown event type — marking as skipped',
+      );
+      throw new SkipEventError(eventType);
+    }
+  }
+}
