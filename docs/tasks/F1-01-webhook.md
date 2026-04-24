@@ -80,9 +80,25 @@ HMAC e timestamp, deduplica, persiste em `raw.raw_events` e responde 2xx rápido
 ```
 
 **Importante**: Fastify reconstrói o body via parser JSON por padrão — você precisa
-do **raw body** para o HMAC. Use `fastify.addContentTypeParser('application/json', ...)`
-para preservar o buffer original ou use `@fastify/raw-body` (já está nas dependências
-se foi autorizado). Se precisar de dependência nova, pare e pergunte.
+do **raw body** para o HMAC. Use `addContentTypeParser` nativo do Fastify com
+`parseAs: 'buffer'` para capturar o Buffer original e fazer o parse JSON manualmente.
+**Não adicione nenhum pacote externo para isso** — o Fastify resolve nativamente:
+
+```ts
+fastify.addContentTypeParser(
+  'application/json',
+  { parseAs: 'buffer' },
+  (_req, body, done) => {
+    try {
+      done(null, { raw: body, parsed: JSON.parse(body.toString()) });
+    } catch (err) {
+      done(err as Error);
+    }
+  }
+);
+```
+
+O handler acessa `request.body.raw` (Buffer para HMAC) e `request.body.parsed` (objeto).
 
 ## Checklist
 

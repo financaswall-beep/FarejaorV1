@@ -1,0 +1,23 @@
+{
+  "event": "conversation_created",
+  "account": {
+    "id": 1
+  },
+  "id": 101,
+  "account_id": 1,
+  "inbox_id": 5,
+  "status": "open",
+  "assignee_id": null,
+  "team_id": null,
+  "contact_id": 201,
+  "contact_inbox": {},
+  "meta": {},
+  "additional_attributes": {},
+  "custom_attributes": {},
+  "priority": null,
+  "created_at": "2026-04-23T12:00:00Z",
+  "updated_at": "2026-04-23T12:00:00Z",
+  "timestamp": 1713873600,
+  "messages": [],
+  "labels": []
+}

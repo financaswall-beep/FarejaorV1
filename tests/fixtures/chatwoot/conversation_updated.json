@@ -1,0 +1,23 @@
+{
+  "event": "conversation_updated",
+  "account": {
+    "id": 1
+  },
+  "id": 101,
+  "account_id": 1,
+  "inbox_id": 5,
+  "status": "resolved",
+  "assignee_id": 42,
+  "team_id": 3,
+  "contact_id": 201,
+  "contact_inbox": {},
+  "meta": {},
+  "additional_attributes": {},
+  "custom_attributes": {},
+  "priority": "high",
+  "created_at": "2026-04-23T12:00:00Z",
+  "updated_at": "2026-04-23T12:05:00Z",
+  "timestamp": 1713873900,
+  "messages": [],
+  "labels": ["suporte"]
+}

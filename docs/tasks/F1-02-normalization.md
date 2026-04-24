@@ -48,6 +48,21 @@ via upsert idempotente com watermark de ordem.
 - `package.json`
 - Qualquer coisa em `src/admin/`
 
+## Alertas de auditoria F1-04 (ler antes de implementar)
+
+Dois problemas encontrados nos fixtures sintéticos que afetam diretamente os mappers:
+
+1. **`sender_type` vem como "Contact" (C maiúsculo) no Chatwoot real às vezes.**
+   O banco tem `CHECK (sender_type IN ('contact', 'user', 'agent_bot', 'system'))` — só
+   aceita lowercase. O mapper **obrigatoriamente** deve normalizar:
+   ```ts
+   sender_type: payload.sender_type?.toLowerCase() ?? 'unknown'
+   ```
+
+2. **`sender` pode vir como `{}` vazio ou ausente.** O mapper não pode assumir que
+   `sender.id` ou `sender.type` existem. Sempre usar optional chaining e fallback para
+   `sender_id` via `payload.sender_id` direto quando `sender` for vazio.
+
 ## Regras específicas
 
 1. **Upsert sempre idempotente**. Use `INSERT ... ON CONFLICT (env, chatwoot_<entity>_id) DO UPDATE`.

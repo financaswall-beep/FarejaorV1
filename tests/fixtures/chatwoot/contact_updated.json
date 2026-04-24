@@ -1,0 +1,16 @@
+{
+  "event": "contact_updated",
+  "account": {
+    "id": 1
+  },
+  "id": 201,
+  "account_id": 1,
+  "name": "João Silva Updated",
+  "email": "joao.silva@example.com",
+  "phone_number": "+5511988888888",
+  "identifier": null,
+  "additional_attributes": {},
+  "custom_attributes": {
+    "vip": true
+  }
+}

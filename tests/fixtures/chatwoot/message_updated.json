@@ -1,0 +1,25 @@
+{
+  "event": "message_updated",
+  "account": {
+    "id": 1
+  },
+  "id": 1001,
+  "conversation_id": 101,
+  "account_id": 1,
+  "inbox_id": 5,
+  "content": "Olá, preciso de ajuda com meu pedido. (editado)",
+  "content_type": "text",
+  "message_type": 0,
+  "private": false,
+  "status": "sent",
+  "source_id": null,
+  "sender_type": "Contact",
+  "sender_id": 201,
+  "sender": {},
+  "created_at": "2026-04-23T12:00:00Z",
+  "updated_at": "2026-04-23T12:01:00Z",
+  "external_source_ids": {},
+  "echo_id": null,
+  "attachments": [],
+  "content_attributes": {}
+}
