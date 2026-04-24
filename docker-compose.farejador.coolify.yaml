@@ -1,0 +1,29 @@
+services:
+  farejador:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      FAREJADOR_ENV: ${FAREJADOR_ENV:-prod}
+      PORT: ${PORT:-3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      DATABASE_SSL: ${DATABASE_SSL:-true}
+      CHATWOOT_HMAC_SECRET: ${CHATWOOT_HMAC_SECRET:?CHATWOOT_HMAC_SECRET is required}
+      CHATWOOT_WEBHOOK_MAX_AGE_SECONDS: ${CHATWOOT_WEBHOOK_MAX_AGE_SECONDS:-300}
+      CHATWOOT_API_BASE_URL: ${CHATWOOT_API_BASE_URL:?CHATWOOT_API_BASE_URL is required}
+      CHATWOOT_API_TOKEN: ${CHATWOOT_API_TOKEN:?CHATWOOT_API_TOKEN is required}
+      CHATWOOT_ACCOUNT_ID: ${CHATWOOT_ACCOUNT_ID:?CHATWOOT_ACCOUNT_ID is required}
+      ADMIN_AUTH_TOKEN: ${ADMIN_AUTH_TOKEN:?ADMIN_AUTH_TOKEN is required}
+    restart: always
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'wget -qO- http://127.0.0.1:3000/healthz || exit 1'
+      interval: 30s
+      timeout: 5s
+      retries: 3
