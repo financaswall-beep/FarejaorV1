@@ -5,9 +5,9 @@
   },
   "id": 201,
   "account_id": 1,
-  "name": "João Silva Updated",
-  "email": "joao.silva@example.com",
-  "phone_number": "+5511988888888",
+  "name": "TEST NAME 1 UPDATED",
+  "email": "test+1@example.com",
+  "phone_number": "+5521999990002",
   "identifier": null,
   "additional_attributes": {},
   "custom_attributes": {

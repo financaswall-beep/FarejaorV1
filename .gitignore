@@ -15,6 +15,7 @@ build/
 .env.production
 .env.development
 .env.test
+.env.codex
 # Keep the template
 !.env.example
 
@@ -53,4 +54,4 @@ tmp/
 temp/
 
 # Claude/agent artifacts (session-local, not repo state)
-.claude/local/
+.claude/

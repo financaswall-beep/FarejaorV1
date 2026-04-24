@@ -12,7 +12,7 @@ Ordem de execução:
 ## Convenções
 
 - Toda tabela tem coluna `environment` (prod/test) via domínio `env_t`
-- Idempotência: `raw` usa `(environment, chatwoot_delivery_id)`; normalizadas usam `(environment, chatwoot_<entity>_id)`
+- Idempotência: webhooks usam `raw.delivery_seen (environment, chatwoot_delivery_id)` como bouncer; normalizadas usam `(environment, chatwoot_<entity>_id)`
 - Soft-delete via `deleted_at` em contacts/conversations/messages (LGPD)
 - Proveniência (truth_type/source/confidence_level/extractor_version) só em `analytics.*`
 - FKs cross-schema e para tabelas particionadas são **lógicas** (validadas no ETL, não pelo Postgres)
@@ -28,10 +28,9 @@ O projeto evolui em 3 fases. Responsabilidades **não** atravessam fronteira de 
 - `raw.raw_events` (via bouncer `raw.delivery_seen`)
 - `core.contacts`, `core.conversations`, `core.messages`, `core.message_attachments`
 - `core.conversation_tags`, `core.conversation_status_events`, `core.conversation_assignments`, `core.message_reactions`
-- `ops.enrichment_jobs` (enfileira jobs; sem workers ainda)
 - `ops.erasure_log` (quando houver solicitação LGPD)
 
-**Não popula**: nada em `analytics.*`. `ops.stock_snapshots` e `ops.bot_events` permanecem vazias.
+**Não popula**: nada em `analytics.*`. `ops.enrichment_jobs`, `ops.stock_snapshots` e `ops.bot_events` permanecem vazias.
 
 **Regra invariante**: zero LLM no runtime. Mapeamento payload → tabelas é 100% determinístico.
 

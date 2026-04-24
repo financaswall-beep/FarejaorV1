@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 
 /**
  * Gera uma assinatura HMAC-SHA256 compatível com o header

@@ -55,7 +55,8 @@ Three layers, clearly separated:
 ## Idempotency Rules
 - Every table in raw, normalized, and derived layers must include an `environment` column.
 - Production and test datasets must never mix, even accidentally.
-- `raw_events` unique key: `(environment, chatwoot_delivery_id)`.
+- Raw webhook deduplication key: `(environment, chatwoot_delivery_id)`, enforced by `raw.delivery_seen`.
+- `raw_events` is partitioned by `received_at`; do not rely on its partition-local uniqueness for deduplication.
 - Normalized entities unique key: `(environment, chatwoot_<entity>_id)`.
 
 ## Taxonomy

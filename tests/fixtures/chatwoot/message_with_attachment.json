@@ -1,0 +1,40 @@
+{
+  "event": "message_created",
+  "account": {
+    "id": 1
+  },
+  "id": 1002,
+  "conversation_id": 101,
+  "account_id": 1,
+  "inbox_id": 5,
+  "content": null,
+  "content_type": "text",
+  "message_type": 0,
+  "private": false,
+  "status": "sent",
+  "source_id": null,
+  "sender_type": "Contact",
+  "sender_id": 201,
+  "sender": {},
+  "created_at": "2026-04-23T12:02:00Z",
+  "updated_at": "2026-04-23T12:02:00Z",
+  "external_source_ids": {},
+  "echo_id": null,
+  "attachments": [
+    {
+      "id": 3001,
+      "message_id": 1002,
+      "account_id": 1,
+      "file_type": "image",
+      "extension": "jpg",
+      "mime_type": "image/jpeg",
+      "data_url": "https://chatwoot.example.test/rails/active_storage/blobs/test-image.jpg",
+      "thumb_url": "https://chatwoot.example.test/rails/active_storage/representations/test-image.jpg",
+      "file_size": 12345,
+      "fallback_title": "TEST ATTACHMENT 1",
+      "coordinates_lat": null,
+      "coordinates_long": null
+    }
+  ],
+  "content_attributes": {}
+}

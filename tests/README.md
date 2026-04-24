@@ -1,25 +1,27 @@
-# Testes — F1-04
+# Testes - Farejador
 
-Este diretório contém a infraestrutura de testes entregue na **F1-04**.
+Este diretorio contem a infraestrutura de testes entregue na **F1-04** e os testes
+unitarios adicionados para a **F1-01**.
 
-## O que está aqui
+## O que esta aqui
 
-| Arquivo / Diretório | Propósito |
+| Arquivo / Diretorio | Proposito |
 |---|---|
-| `vitest.config.ts` | Configuração do Vitest (raiz do projeto). |
-| `tests/fixtures/chatwoot/*.json` | 7 fixtures JSON, um para cada `event_type` suportado no MVP. |
-| `tests/helpers/hmac.ts` | Geração de assinaturas HMAC para testes futuros do webhook handler. |
-| `tests/helpers/db.ts` | Esqueleto de setup/teardown de banco; sem conexão real nesta entrega. |
+| `vitest.config.ts` | Configuracao do Vitest (raiz do projeto). |
+| `tests/fixtures/chatwoot/*.json` | 8 fixtures JSON: um para cada `event_type` suportado no MVP, mais uma mensagem com attachment. |
+| `tests/helpers/hmac.ts` | Geracao de assinaturas HMAC para testes do webhook handler. |
+| `tests/helpers/db.ts` | Esqueleto de setup/teardown de banco; sem conexao real nesta entrega. |
 | `tests/unit/shared/types/chatwoot.test.ts` | Valida que cada fixture passa pelo `chatwootWebhookEnvelopeSchema`. |
+| `tests/unit/webhooks/*.test.ts` | Valida HMAC/timestamp e fluxo do webhook handler com `pg` mockado. |
 
-## O que NÃO está aqui (escopo adiado)
+## O que nao esta aqui (escopo adiado)
 
-- Testes do webhook handler → **F1-01**
-- Testes dos mappers de normalização → **F1-02**
-- Testes de deduplicação com banco → **F1-01**
-- Testes de watermark com banco → **F1-02**
+- Testes dos mappers de normalizacao -> **F1-02**
+- Testes de deduplicacao com banco real -> pendente de Postgres/Supabase com migrations aplicadas
+- Testes de watermark com banco real -> **F1-02**
 
-Esses testes serão escritos junto com a implementação de produção nas respectivas tasks.
+Os testes de handler existentes usam `pg` mockado e nao substituem a validacao end-to-end
+contra Postgres real.
 
 ## Como rodar
 
@@ -27,4 +29,9 @@ Esses testes serão escritos junto com a implementação de produção nas respe
 npm test
 ```
 
-Critério de aceite da F1-04: todos os testes existentes passam (verde).
+Criterio de aceite local: todos os testes existentes passam (verde).
+
+## Dados sensiveis
+
+As fixtures usam placeholders (`TEST NAME`, `test+N@example.com`, telefones de teste e URLs `example.test`).
+Nao devem conter PII real.

@@ -81,36 +81,39 @@ Legenda: ✅ Feito | ⚠️ Feito com ressalva | 🔜 Próximo | ⏳ Aguardando 
 - [x] `tests/fixtures/chatwoot/conversation_status_changed.json`
 - [x] `tests/fixtures/chatwoot/message_created.json`
 - [x] `tests/fixtures/chatwoot/message_updated.json`
+- [x] `tests/fixtures/chatwoot/message_with_attachment.json`
 - [x] `tests/helpers/hmac.ts`
 - [x] `tests/helpers/db.ts` (esqueleto)
-- [x] `tests/unit/shared/types/chatwoot.test.ts` — 8 testes (7 positivos + 1 negativo)
+- [x] `tests/unit/shared/types/chatwoot.test.ts` — 9 testes (8 positivos + 1 negativo)
 - [x] `tests/README.md`
-- [x] `npm test` verde na máquina do dono (8/8)
-- [ ] `tests/fixtures/chatwoot/message_with_attachment.json` — adiado para F1-02
-- [ ] `import 'node:crypto'` em vez de `'crypto'` no hmac.ts — correção menor, feita em F1-01
+- [x] `import 'node:crypto'` em vez de `'crypto'` no hmac.ts
+- [x] Fixtures sanitizadas com placeholders sem PII real
+- [x] `npm test` verde após correção local (9/9)
 
 ---
 
-### F1-01 — Webhook end-to-end 🔜 PRÓXIMA
-- [ ] `src/app/server.ts`
-- [ ] `src/app/routes.ts`
-- [ ] `src/webhooks/chatwoot.route.ts`
-- [ ] `src/webhooks/chatwoot.handler.ts`
-- [ ] `src/webhooks/chatwoot.hmac.ts`
-- [ ] `src/persistence/db.ts`
-- [ ] `src/persistence/raw-events.repository.ts`
-- [ ] `src/persistence/delivery-seen.repository.ts`
-- [ ] `src/shared/config/env.ts`
-- [ ] `src/shared/logger.ts`
-- [ ] `src/webhooks/chatwoot.handler.test.ts`
-- [ ] Rota `POST /webhooks/chatwoot` funcional
-- [ ] HMAC validado (timing-safe)
-- [ ] Timestamp expirado rejeitado
-- [ ] Dedup via `raw.delivery_seen`
-- [ ] Insert em `raw.raw_events`
-- [ ] Resposta 2xx rápida
-- [ ] Shutdown gracioso (SIGTERM)
-- [ ] `npm test` verde com testes do handler
+### F1-01 — Webhook end-to-end ✅ VALIDADA COM DB REAL
+- [x] `src/app/server.ts`
+- [x] `src/app/routes.ts`
+- [x] `src/webhooks/chatwoot.route.ts`
+- [x] `src/webhooks/chatwoot.handler.ts`
+- [x] `src/webhooks/chatwoot.hmac.ts`
+- [x] `src/persistence/db.ts`
+- [x] `src/persistence/raw-events.repository.ts`
+- [x] `src/persistence/delivery-seen.repository.ts`
+- [x] `src/shared/config/env.ts`
+- [x] `src/shared/logger.ts`
+- [x] `tests/unit/webhooks/chatwoot.handler.test.ts`
+- [x] `tests/unit/webhooks/chatwoot.hmac.test.ts`
+- [x] Rota `POST /webhooks/chatwoot` registrada
+- [x] HMAC validado (timing-safe)
+- [x] Timestamp expirado rejeitado
+- [x] Dedup via `raw.delivery_seen`
+- [x] Insert em `raw.raw_events`
+- [x] Resposta 2xx rápida, sem normalização no hot path
+- [x] Shutdown gracioso (SIGTERM/SIGINT)
+- [x] `npm test` verde com testes do handler (17/17)
+- [x] Validação end-to-end contra Postgres/Supabase com migrations aplicadas (`codex-e2e-*`)
 
 ---
 
@@ -133,7 +136,7 @@ Legenda: ✅ Feito | ⚠️ Feito com ressalva | 🔜 Próximo | ⏳ Aguardando 
 - [ ] `src/persistence/assignments.repository.ts`
 - [ ] `src/persistence/reactions.repository.ts`
 - [ ] `src/persistence/tags.repository.ts`
-- [ ] `tests/fixtures/chatwoot/message_with_attachment.json`
+- [x] `tests/fixtures/chatwoot/message_with_attachment.json`
 - [ ] `sender_type` normalizado para lowercase no mapper
 - [ ] `sender: {}` tratado com optional chaining
 - [ ] Upserts com watermark `last_event_at`

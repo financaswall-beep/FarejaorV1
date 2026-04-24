@@ -7,7 +7,7 @@
   "conversation_id": 101,
   "account_id": 1,
   "inbox_id": 5,
-  "content": "Olá, preciso de ajuda com meu pedido.",
+  "content": "TEST MESSAGE 1",
   "content_type": "text",
   "message_type": 0,
   "private": false,

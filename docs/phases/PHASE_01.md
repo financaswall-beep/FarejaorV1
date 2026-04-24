@@ -54,7 +54,7 @@ Fixtures primeiro porque as tasks 01 e 02 se beneficiam de testes desde o começ
 
 ## Pré-requisitos (antes de F1-01 começar)
 
-- [x] Migrations `0001`–`0006` aplicadas no Supabase
+- [ ] Migrations `0001`–`0006` aplicadas no Supabase
 - [x] `src/shared/types/chatwoot.ts` criado e revisado (stub em `docs/` já gerado)
 - [x] `package.json`, `tsconfig.json`, `.env.example`, `.gitignore` no repo
 - [x] `docs/KIMI_RULES.md` anexado em todo prompt de task

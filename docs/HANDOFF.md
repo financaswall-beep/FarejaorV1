@@ -117,13 +117,15 @@ AGENTS.md                     — guia operacional para agentes de IA no repo
 
 Entregou:
 - `vitest.config.ts` com alias `@` → `src`
-- 7 fixtures JSON sintéticas em `tests/fixtures/chatwoot/` (uma por event_type do MVP)
+- 8 fixtures JSON sintéticas em `tests/fixtures/chatwoot/` (7 event types do MVP + 1 mensagem com attachment)
 - `tests/helpers/hmac.ts` — gera HMAC-SHA256 via `node:crypto`
 - `tests/helpers/db.ts` — esqueleto setup/teardown (conexão real vai em F1-01/F1-02)
-- `tests/unit/shared/types/chatwoot.test.ts` — 8 testes (7 positivos + 1 negativo)
+- `tests/unit/shared/types/chatwoot.test.ts` — 9 testes (8 positivos + 1 negativo)
+- `tests/unit/webhooks/chatwoot.handler.test.ts` — fluxo do handler com `pg` mockado
+- `tests/unit/webhooks/chatwoot.hmac.test.ts` — HMAC e timestamp
 - `tests/README.md`
 
-Resultado: `npm test` → **8/8 verde** na máquina do dono.
+Resultado atual: `npm test` → **17/17 verde**.
 
 **Problema encontrado e corrigido**: `@fastify/raw-body@^5.0.0` não existe no npm.
 Removido do `package.json`. Raw body capturado via `addContentTypeParser` nativo
@@ -131,11 +133,12 @@ do Fastify (documentado em F1-01).
 
 ---
 
-## Próxima tarefa: F1-01
+## Estado atual: F1-01 implementada localmente
 
-**Branch**: `feature/F1-01-webhook`
+F1-01 foi integrada ao workspace atual a partir da branch `feature/F1-01-webhook`,
+com ajustes de revisão.
 
-**Escopo**:
+**Entregue**:
 - Boot Fastify em `src/app/server.ts`
 - Rota `POST /webhooks/chatwoot`
 - Validação HMAC (`X-Chatwoot-Signature`) com timing-safe compare
@@ -146,8 +149,15 @@ do Fastify (documentado em F1-01).
 - Pool `pg` em `src/persistence/db.ts`
 - Env vars validadas com Zod em `src/shared/config/env.ts`
 - Logger pino em `src/shared/logger.ts`
-- Testes do handler em `src/webhooks/chatwoot.handler.test.ts`
+- Testes do handler em `tests/unit/webhooks/chatwoot.handler.test.ts`
+- Testes de HMAC/timestamp em `tests/unit/webhooks/chatwoot.hmac.test.ts`
 - Shutdown gracioso (SIGTERM)
+
+**Validação end-to-end executada**:
+- POST com HMAC válido gravou `raw.delivery_seen` e `raw.raw_events` com `processing_status='pending'`.
+- Retry com o mesmo `X-Chatwoot-Delivery` retornou 200 sem duplicar raw event.
+- Assinatura inválida retornou 401 e não gravou em `raw.delivery_seen` nem `raw.raw_events`.
+- Delivery sintético usado: `codex-e2e-*`.
 
 **Ponto técnico importante — raw body para HMAC**:
 ```ts
@@ -226,5 +236,4 @@ Ao final entregue:
    aplicadas antes dos testes de integração de F1-01 e F1-02. Claude tem acesso via
    MCP ao projeto — decisão de aplicar via MCP ou manual ainda pendente.
 
-2. **Fixture `message_with_attachment.json`** — não criada em F1-04. Criar junto com
-   o mapper de attachments em F1-02.
+2. **Fixture `message_with_attachment.json`** — criada após revisão para fechar o escopo da F1-04.

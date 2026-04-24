@@ -11,6 +11,7 @@ const fixtures = [
   { name: 'conversation_status_changed' },
   { name: 'message_created' },
   { name: 'message_updated' },
+  { name: 'message_with_attachment' },
   { name: 'contact_created' },
   { name: 'contact_updated' },
 ];
