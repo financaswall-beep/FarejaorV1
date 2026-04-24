@@ -34,9 +34,9 @@ export async function chatwootWebhookHandler(
     environment: env.FAREJADOR_ENV,
   };
 
-  if (chatwootTimestamp && !validateTimestamp(chatwootTimestamp)) {
-    logger.warn(logCtx, 'Webhook timestamp expired');
-    return reply.status(401).send({ error: 'Timestamp expired' });
+  if (!chatwootTimestamp || !validateTimestamp(chatwootTimestamp)) {
+    logger.warn(logCtx, 'Webhook timestamp missing or expired');
+    return reply.status(401).send({ error: 'Timestamp missing or expired' });
   }
 
   if (!validateHmac(rawBody, chatwootSignature)) {

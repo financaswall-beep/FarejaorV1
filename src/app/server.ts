@@ -1,11 +1,11 @@
 import Fastify from 'fastify';
 import { env } from '../shared/config/env.js';
-import { logger } from '../shared/logger.js';
+import { logger, loggerOptions } from '../shared/logger.js';
 import { pool } from '../persistence/db.js';
 import { registerRoutes } from './routes.js';
 
 const fastify = Fastify({
-  logger: true,
+  logger: loggerOptions,
 });
 
 fastify.addContentTypeParser(

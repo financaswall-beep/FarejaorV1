@@ -1,7 +1,8 @@
 import pino from 'pino';
+import type { LoggerOptions } from 'pino';
 import { env } from './config/env.js';
 
-export const logger = pino({
+export const loggerOptions: LoggerOptions = {
   level: env.LOG_LEVEL,
   redact: {
     paths: [
@@ -14,4 +15,6 @@ export const logger = pino({
     ],
     censor: '[REDACTED]',
   },
-});
+};
+
+export const logger = pino(loggerOptions);
