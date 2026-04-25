@@ -41,6 +41,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] `docs/HANDOFF.md`
 - [x] `docs/CHECKLIST.md`
 - [x] `docs/DATA_DICTIONARY.md`
+- [x] `docs/TIRE_SALES_SYNTHETIC_SCENARIOS.md`
 - [x] `docs/phases/PHASE_01.md`
 - [x] `docs/tasks/F1-01-webhook.md`
 - [x] `docs/tasks/F1-02-normalization.md`
@@ -52,6 +53,7 @@ Legenda: feito, em andamento, proximo, futuro.
 ### F1-04 - Fixtures e testes base
 
 - [x] Fixtures Chatwoot sinteticas.
+- [x] Fixtures sinteticas de cenarios de venda de pneus.
 - [x] Helpers de HMAC.
 - [x] Testes de contratos.
 - [x] Fixtures sanitizadas.
@@ -97,7 +99,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Reconcile injeta raw_events sinteticos com delivery_id deterministico.
 - [x] Reconcile retorna resultado parcial quando a paginacao falha.
 - [x] Testes unitarios de auth, health, replay, cliente Chatwoot, reconcile service e route.
-- [x] `npm test` 106/106.
+- [x] `npm test` 108/108.
 - [x] `npm run typecheck` verde.
 - [x] `npm run build` verde.
 - [x] Teste manual com Chatwoot real e Supabase real para webhook, contato, conversa e mensagem.
