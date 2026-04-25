@@ -123,6 +123,37 @@ Status do shadow mode:
   - 0 duplicatas em `core.messages`.
 - Proximo passo operacional: monitorar shadow mode por periodo combinado e rotacionar secrets.
 
+## F1.5 - Hardening aplicado em 2026-04-25
+
+Auditoria tecnica completa + hardening deployado antes de abrir Fase 2a.
+
+### Migrations aplicadas no Supabase (nao requerem redeploy futuro):
+
+- `0007_raw_immutability_guard.sql`: trigger `raw.enforce_raw_event_immutability` impede UPDATE em colunas de identidade/payload e impede DELETE em `raw.raw_events`. Validado: rejeita UPDATE com ERRCODE restrict_violation (23001).
+- `0008_idempotency_constraints.sql`: UNIQUE constraints atomicas em `core.conversation_status_events` e `core.conversation_assignments`. Fecha race condition de dedup concorrente que `WHERE NOT EXISTS` nao cobria.
+- `0009_orphan_stub_monitor.sql`: view `ops.orphan_conversation_stubs` e funcao `ops.report_orphan_stubs()`. Monitor de conversas-stub sem `last_event_at` (criadas quando message_created chegou antes de conversation_created).
+
+### Codigo deployado (commit 66b9537):
+
+- Reconcile usa `reconcile-v2:tipo:env:account_id:id:ts` — inclui `account_id` para evitar colisao cross-account.
+- `DATABASE_CA_CERT` via env: SSL com validacao de certificado quando configurado. Aviso em prod sem CA.
+- `first_seen_at` em `core.contacts` nao zera mais no UPDATE.
+- `MAX_PER_POLL` (era `BATCH_SIZE`): nome correto, comentario explicando comportamento de drenagem.
+
+### Estado atual do banco (Supabase Farejador aoqtgwzeyznycuakrdhp):
+
+- `raw.raw_events`: 157 linhas, imutabilidade enforced no banco.
+- `core.contacts`: 94 linhas (prod).
+- `core.conversations`: 92 linhas (prod) + 80 stubs de teste (environment=test).
+- `core.messages`: 118 linhas (prod).
+- Stubs orfaos: 80 em environment=test, IDs Chatwoot 1200200-1200279, do teste de concorrencia de 25/04.
+
+### Pendente da F1.5 (antes de Fase 2a):
+
+1. Harness de integracao com Postgres real — testes automatizados que rodam SQL real.
+2. Zod permissivo nos mappers criticos — schemas com `.passthrough()` nos mappers de contact, conversation e message.
+3. Limpar body legado do handler e migrar testes para caminho real de producao.
+
 ## Fluxo recomendado para Kimi
 
 Usar branch por task:

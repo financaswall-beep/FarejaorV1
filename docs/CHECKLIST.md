@@ -124,6 +124,26 @@ Legenda: feito, em andamento, proximo, futuro.
 - [ ] Shadow mode com webhooks reais por periodo combinado.
 - [ ] Rotacionar secrets antes de producao plena.
 
+## 5.1 F1.5 - Hardening pre-producao plena (2026-04-25)
+
+Auditoria tecnica completa realizada antes de abrir Fase 2a. Itens aplicados e deployados:
+
+- [x] Trigger `raw.enforce_raw_event_immutability` em `raw.raw_events`: bloqueia UPDATE em payload/event_type/delivery_id e bloqueia DELETE. Whitelist: `processing_status`, `processing_error`, `processed_at`. Propagado para todas as particoes. Validado no Supabase real (rejeitou UPDATE em id=174).
+- [x] UNIQUE constraint `status_events_dedup_key` em `core.conversation_status_events (environment, chatwoot_conversation_id, event_type, occurred_at)`: fecha race condition de dedup concorrente.
+- [x] UNIQUE constraint `assignments_dedup_key` em `core.conversation_assignments (environment, conversation_id, agent_id, assigned_at)`: idem.
+- [x] Reconcile delivery_id versionado: formato `reconcile-v2:tipo:env:account_id:id:ts` inclui `account_id` para evitar colisao cross-account.
+- [x] SSL com `DATABASE_CA_CERT` via env: `rejectUnauthorized:true` quando CA configurado; aviso em prod sem CA (nao bloqueia ainda — configurar antes de producao plena).
+- [x] `first_seen_at` em `core.contacts`: nao zera mais no `ON CONFLICT DO UPDATE`; `COALESCE(now())` no INSERT garante preenchimento na primeira vez.
+- [x] `MAX_PER_POLL` (renomeado de `BATCH_SIZE`): comportamento documentado — encerra ciclo cedo se fila vazia, nao e limite de tentativas.
+- [x] View `ops.orphan_conversation_stubs` + funcao `ops.report_orphan_stubs()`: detecta conversas-stub com `last_event_at IS NULL` ha mais de 10 minutos. 80 stubs de teste identificados (environment=test, conc. test 25/04).
+- [x] `db/migrations/README.md` atualizado: 0007 e 0008 na lista de ordem; pg_cron marcado como requisito de producao (nao opcional).
+- [x] `.env.example` atualizado com `DATABASE_CA_CERT` e instrucoes de obtencao do cert Supabase.
+
+Pendente da F1.5:
+- [ ] Harness de integracao com Postgres real (testes automatizados contra banco real).
+- [ ] Zod permissivo nos mappers criticos (contact, conversation, message).
+- [ ] Limpar body legado do handler e migrar testes para caminho real de producao.
+
 ## 6. Futuro
 
 - [ ] Fase 2a: enrichment deterministico em `analytics.*`.
