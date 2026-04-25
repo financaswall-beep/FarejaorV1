@@ -14,9 +14,11 @@ let stopWorker: (() => void) | null = null;
 fastify.addContentTypeParser(
   'application/json',
   { parseAs: 'buffer' },
-  (_req, body, done) => {
+  (request, body, done) => {
     try {
-      done(null, { raw: body, parsed: JSON.parse(body.toString()) });
+      const rawBody = Buffer.isBuffer(body) ? body : Buffer.from(body);
+      (request.raw as typeof request.raw & { rawBody?: Buffer }).rawBody = rawBody;
+      done(null, JSON.parse(rawBody.toString()));
     } catch (err) {
       done(err as Error);
     }

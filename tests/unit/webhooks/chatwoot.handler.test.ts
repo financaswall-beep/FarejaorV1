@@ -61,6 +61,28 @@ function createRequest(payload: unknown, options: RequestOptions = {}): FastifyR
   } as unknown as FastifyRequest;
 }
 
+function createParsedBodyRequest(payload: unknown, options: RequestOptions = {}): FastifyRequest {
+  const raw = Buffer.from(JSON.stringify(payload));
+  const timestamp = options.timestamp ?? String(Math.floor(Date.now() / 1000));
+  const signedPayload = Buffer.concat([Buffer.from(`${timestamp}.`, 'utf8'), raw]);
+  const signature = options.signatureOverride
+    ?? createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(signedPayload).digest('hex');
+  const headers: Record<string, string> = {
+    'x-chatwoot-signature': signature,
+    'x-chatwoot-delivery': options.deliveryId ?? 'delivery-parsed-body',
+  };
+
+  if (!options.omitTimestamp) {
+    headers['x-chatwoot-timestamp'] = timestamp;
+  }
+
+  return {
+    body: payload,
+    raw: { rawBody: raw },
+    headers,
+  } as unknown as FastifyRequest;
+}
+
 async function loadHandler(clientOrError: MockClient | Error): Promise<{
   handler: typeof import('../../../src/webhooks/chatwoot.handler').chatwootWebhookHandler;
   connect: ReturnType<typeof vi.fn>;
@@ -116,6 +138,30 @@ describe('chatwootWebhookHandler', () => {
 
     expect(reply.statusCode).toBe(200);
     expect(reply.payload).toEqual({ received: true, delivery_id: 'delivery-1' });
+    expect(client.query).toHaveBeenCalledWith('BEGIN');
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  it('persists a valid webhook when the server parser returns normal JSON body', async () => {
+    const client: MockClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: 456 }] })
+        .mockResolvedValueOnce({ rows: [] }),
+      release: vi.fn(),
+    };
+    const { handler } = await loadHandler(client);
+    const reply = createReply();
+
+    await handler(
+      createParsedBodyRequest({ event: 'message_created', account: { id: 1 }, id: 1002 }),
+      reply,
+    );
+
+    expect(reply.statusCode).toBe(200);
+    expect(reply.payload).toEqual({ received: true, delivery_id: 'delivery-parsed-body' });
     expect(client.query).toHaveBeenCalledWith('BEGIN');
     expect(client.query).toHaveBeenCalledWith('COMMIT');
     expect(client.release).toHaveBeenCalledOnce();
