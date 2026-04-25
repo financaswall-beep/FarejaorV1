@@ -33,9 +33,8 @@ Concluido:
 Pendente antes de considerar Fase 1 fechada:
 
 - Rodar shadow mode por periodo combinado com o webhook ligado.
-- Validar replay real sem duplicar `core.*`.
-- Validar reconcile real em janela pequena.
 - Validar dois workers concorrentes contra Postgres real.
+- Rotacionar secrets antes de producao plena.
 
 ## Acesso e endpoints
 
@@ -84,6 +83,10 @@ https://github.com/financaswall-beep/FarejaorV1
 Ultimos commits relevantes:
 
 ```text
+f1e29ca fix: dedupe messages across timestamp precision
+c0769f8 fix: support Chatwoot top-level payload pages
+3538252 fix: reconcile filters Chatwoot conversations locally
+b7284f3 fix: keep raw webhook body without wrapping admin JSON
 0e10878 fix: link conversations to nested Chatwoot contacts
 f6ad7ff fix: upsert contacts from nested Chatwoot payloads
 186f891 fix: map nested Chatwoot sender metadata
@@ -198,6 +201,49 @@ core.messages:
 Conclusao: o fluxo real Chatwoot -> Farejador -> Supabase esta funcionando para
 contato, conversa e mensagem, com vinculo entre as tabelas normalizadas.
 
+## Replay e reconcile reais
+
+Replay real validado:
+
+```text
+POST /admin/replay/111
+previous_status: processed
+resultado final: raw_event voltou para processed
+duplicatas em core.messages: 0
+```
+
+Reconcile real validado em janela pequena contra Chatwoot:
+
+```text
+primeira execucao:
+inserted: 10
+skipped_duplicate: 2
+errors: []
+pages_fetched: 1
+aborted: false
+
+segunda execucao:
+inserted: 0
+skipped_duplicate: 12
+errors: []
+pages_fetched: 1
+aborted: false
+```
+
+Bug encontrado durante reconcile:
+
+- O Chatwoot retornou mensagens com `created_at` em segundos, enquanto o webhook
+  real havia gravado `sent_at` com milissegundos.
+- Isso criou duplicatas em `core.messages` antes da correcao.
+
+Correcao:
+
+- `upsertMessage` passou a deduplicar por `environment + chatwoot_message_id` antes
+  de considerar `sent_at`.
+- Duplicatas geradas nas conversas de teste 7/8 foram removidas mantendo a linha
+  com timestamp mais preciso.
+- Reprocessar os eventos `reconcile:*` depois da correcao nao recriou duplicatas.
+
 ## Problema encontrado: enxurrada de message_updated
 
 A inbox API do Chatwoot reenviou muitos eventos `message_updated` da mensagem de teste
@@ -259,11 +305,9 @@ Proximos passos operacionais:
 
 1. Manter o webhook ligado por um periodo curto e monitorado.
 2. Acompanhar `raw.raw_events` por `pending`, `failed` e `skipped`.
-3. Rodar `/admin/replay/:raw_event_id` em um evento real e confirmar que nao duplica `core.*`.
-4. Rodar `/admin/reconcile` em janela pequena e confirmar inserts idempotentes em `raw.*`.
-5. Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
-6. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
-7. Quando o projeto sair do shadow mode, decidir entre:
+3. Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
+4. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
+5. Quando o projeto sair do shadow mode, decidir entre:
    - manter skip de `message_updated`;
    - ou trocar por dedup semantica por `(environment, message_id, content hash)`.
 
@@ -311,8 +355,7 @@ final validou contato, conversa e mensagem normalizados e vinculados em core.*.
 
 Pergunta: quais validacoes operacionais faltam antes de fechar Fase 1 e abrir Fase 2a?
 
-Favor avaliar replay real, reconcile real, dois workers concorrentes, periodo de
-shadow mode e rotacao de secrets.
+Favor avaliar dois workers concorrentes, periodo de shadow mode e rotacao de secrets.
 ```
 
 ## Riscos atuais
@@ -322,8 +365,8 @@ shadow mode e rotacao de secrets.
   do banco se necessario.
 - `message_updated` esta filtrado no worker, mas ainda deve ser monitorado em volume.
 - A inbox API pode nao permitir selecao granular de eventos no painel.
-- Ainda falta teste real de replay e reconcile.
 - Ainda falta teste real com dois workers concorrentes.
+- Ainda falta rotacao de secrets antes de producao plena.
 
 ## Veredito
 

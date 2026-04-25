@@ -78,7 +78,7 @@ Regras criticas:
 - Replay so muda campos operacionais: `processing_status`, `processing_error`, `processed_at`.
 - Reconcile injeta em raw, nunca escreve direto em core.
 - Reconcile retorna resultado parcial com `aborted` e `abort_reason` em falha de paginacao.
-- Validacao local final apos hardening: `npm test` 106/106, `npm run typecheck`,
+- Validacao local final apos hardening: `npm test` 112/112, `npm run typecheck`,
   `npm run build`.
 
 ## Proxima etapa operacional
@@ -109,7 +109,14 @@ Status do shadow mode:
   - 49 raw_events sinteticos.
   - 49/49 `processed`, 0 `failed`.
   - Segunda execucao: 49/49 duplicatas ignoradas por `raw.delivery_seen`.
-- Proximo passo operacional: monitorar shadow mode, testar replay real, testar reconcile real e validar concorrencia de worker.
+- Replay real validado:
+  - raw_event `111` reprocessado via `/admin/replay/111`.
+  - `core.messages` da conversa 8 permaneceu sem duplicacao.
+- Reconcile real validado em janela pequena:
+  - primeira execucao inseriu eventos `reconcile:*`.
+  - segunda execucao retornou `inserted=0`, `skipped_duplicate=12`, `errors=[]`.
+  - bug de duplicacao por precisao de timestamp foi corrigido antes do fechamento.
+- Proximo passo operacional: validar concorrencia de worker, monitorar shadow mode por periodo combinado e rotacionar secrets.
 
 ## Fluxo recomendado para Kimi
 
