@@ -104,6 +104,11 @@ Status do shadow mode:
   - `core.contacts`: contato real criado.
   - `core.conversations`: conversa real vinculada ao contato.
   - `core.messages`: mensagem real vinculada a conversa e ao sender.
+- Teste sintetico nivel 2 tambem foi executado no Supabase real com `environment=test`:
+  - 10 cenarios de venda de pneus.
+  - 49 raw_events sinteticos.
+  - 49/49 `processed`, 0 `failed`.
+  - Segunda execucao: 49/49 duplicatas ignoradas por `raw.delivery_seen`.
 - Proximo passo operacional: monitorar shadow mode, testar replay real, testar reconcile real e validar concorrencia de worker.
 
 ## Fluxo recomendado para Kimi

@@ -24,8 +24,10 @@ describe('auxiliary event repositories', () => {
     );
 
     const sql = client.query.mock.calls[0][0] as string;
+    expect(sql).toContain('WITH input AS');
+    expect(sql).toContain('$1::env_t AS environment');
     expect(sql).toContain('WHERE NOT EXISTS');
-    expect(sql).toContain('raw_event_id IS NOT DISTINCT FROM $10');
+    expect(sql).toContain('raw_event_id IS NOT DISTINCT FROM input.raw_event_id');
   });
 
   it('inserts assignments idempotently with a logical existence check', async () => {
@@ -45,7 +47,9 @@ describe('auxiliary event repositories', () => {
     );
 
     const sql = client.query.mock.calls[0][0] as string;
+    expect(sql).toContain('WITH input AS');
+    expect(sql).toContain('$1::env_t AS environment');
     expect(sql).toContain('WHERE NOT EXISTS');
-    expect(sql).toContain('team_id IS NOT DISTINCT FROM $4');
+    expect(sql).toContain('team_id IS NOT DISTINCT FROM input.team_id');
   });
 });

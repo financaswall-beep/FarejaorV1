@@ -28,6 +28,45 @@ Fixture correspondente:
 tests/fixtures/business/tire_sales_scenarios.json
 ```
 
+## Validacao nivel 2 - Supabase real
+
+Em 25/04/2026, estes cenarios foram inseridos no Supabase real com
+`environment=test`, sem passar pelo Chatwoot e sem contaminar o dataset de producao.
+
+Resultado final:
+
+```text
+cenarios: 10
+raw_events sinteticos: 49
+raw.raw_events processed: 49
+raw.raw_events failed: 0
+core.contacts: 10
+core.conversations: 10
+core.messages: 28
+core.conversation_status_events: 1
+```
+
+A segunda execucao dos mesmos eventos retornou:
+
+```text
+inserted: 0
+skipped_duplicate: 49
+```
+
+Isso confirmou que o bouncer `raw.delivery_seen` manteve idempotencia para os
+delivery ids sinteticos.
+
+Bug encontrado durante a validacao:
+
+- `core.conversation_status_events` falhava no Postgres com erro de inferencia de tipo
+  entre `env_t` e `text`.
+
+Correcao aplicada:
+
+- `src/persistence/status-events.repository.ts` passou a tipar explicitamente os
+  parametros em uma CTE `input`.
+- `src/persistence/assignments.repository.ts` recebeu o mesmo hardening preventivo.
+
 ## Funil inicial de pneus
 
 Para estudos e futuras regras deterministicas, o funil pode ser lido em quatro eixos:

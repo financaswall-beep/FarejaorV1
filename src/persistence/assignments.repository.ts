@@ -7,18 +7,27 @@ export async function insertAssignment(
   conversationId: string,
 ): Promise<void> {
   await client.query(
-    `INSERT INTO core.conversation_assignments (
+    `WITH input AS (
+      SELECT
+        $1::env_t AS environment,
+        $2::uuid AS conversation_id,
+        $3::bigint AS agent_id,
+        $4::bigint AS team_id,
+        $5::timestamptz AS assigned_at
+    )
+    INSERT INTO core.conversation_assignments (
       environment, conversation_id, agent_id, team_id, assigned_at
     )
-    SELECT $1, $2, $3, $4, $5
+    SELECT environment, conversation_id, agent_id, team_id, assigned_at
+    FROM input
     WHERE NOT EXISTS (
       SELECT 1
       FROM core.conversation_assignments
-      WHERE environment = $1
-        AND conversation_id = $2
-        AND agent_id = $3
-        AND team_id IS NOT DISTINCT FROM $4
-        AND assigned_at = $5
+      WHERE environment = input.environment
+        AND conversation_id = input.conversation_id
+        AND agent_id = input.agent_id
+        AND team_id IS NOT DISTINCT FROM input.team_id
+        AND assigned_at = input.assigned_at
     )`,
     [
       assignment.environment,

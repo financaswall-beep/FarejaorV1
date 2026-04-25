@@ -114,6 +114,8 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Webhook da inbox API religado com `SKIP_EVENT_TYPES=message_updated`.
 - [x] Payload real aninhado do Chatwoot tratado nos mappers/dispatcher.
 - [x] Teste final validou `core.contacts`, `core.conversations` e `core.messages` vinculados.
+- [x] Cenarios sinteticos de venda de pneus processados no Supabase real com `environment=test`: 49/49 `processed`, 0 `failed`.
+- [x] Idempotencia dos cenarios sinteticos validada: segunda execucao com 49/49 duplicatas ignoradas.
 - [ ] Replay real nao duplica status events, assignments, messages ou attachments.
 - [ ] Reconcile real em janela pequena injeta `raw_events` sem duplicar.
 - [ ] Dois workers nao pegam o mesmo raw_event em teste/integracao com Postgres.
