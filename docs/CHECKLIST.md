@@ -41,6 +41,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] `docs/HANDOFF.md`
 - [x] `docs/CHECKLIST.md`
 - [x] `docs/DATA_DICTIONARY.md`
+- [x] `docs/BASE_FORK_POINT.md`
 - [x] `docs/TIRE_SALES_SYNTHETIC_SCENARIOS.md`
 - [x] `docs/phases/PHASE_01.md`
 - [x] `docs/tasks/F1-01-webhook.md`
