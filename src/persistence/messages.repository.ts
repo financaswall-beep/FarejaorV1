@@ -32,31 +32,71 @@ export async function upsertMessage(
       WHERE environment = $1
         AND chatwoot_conversation_id = $3
       LIMIT 1
+    ),
+    existing_message AS (
+      SELECT id, conversation_id
+      FROM core.messages
+      WHERE environment = $1
+        AND chatwoot_message_id = $2
+      ORDER BY sent_at DESC
+      LIMIT 1
+    ),
+    updated_existing AS (
+      UPDATE core.messages
+      SET conversation_id = (SELECT id FROM conversation_ref),
+          chatwoot_conversation_id = $3,
+          sender_type = $4,
+          sender_id = $5,
+          message_type = $6,
+          content = $7,
+          content_type = $8,
+          content_attributes = $9,
+          is_private = $10,
+          status = $11,
+          external_source_ids = $12,
+          echo_id = $13,
+          last_event_at = $15
+      WHERE environment = $1
+        AND chatwoot_message_id = $2
+        AND (
+          last_event_at IS NULL
+          OR $15 >= last_event_at
+        )
+      RETURNING id, conversation_id
+    ),
+    inserted AS (
+      INSERT INTO core.messages (
+        environment, chatwoot_message_id, conversation_id, chatwoot_conversation_id,
+        sender_type, sender_id, message_type, content, content_type, content_attributes,
+        is_private, status, external_source_ids, echo_id, sent_at, last_event_at
+      )
+      SELECT
+        $1, $2,
+        (SELECT id FROM conversation_ref),
+        $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+      WHERE NOT EXISTS (SELECT 1 FROM existing_message)
+      ON CONFLICT (environment, chatwoot_message_id, sent_at) DO UPDATE
+      SET sender_type = EXCLUDED.sender_type,
+          sender_id = EXCLUDED.sender_id,
+          message_type = EXCLUDED.message_type,
+          content = EXCLUDED.content,
+          content_type = EXCLUDED.content_type,
+          content_attributes = EXCLUDED.content_attributes,
+          is_private = EXCLUDED.is_private,
+          status = EXCLUDED.status,
+          external_source_ids = EXCLUDED.external_source_ids,
+          echo_id = EXCLUDED.echo_id,
+          last_event_at = EXCLUDED.last_event_at
+      WHERE core.messages.last_event_at IS NULL
+         OR EXCLUDED.last_event_at >= core.messages.last_event_at
+      RETURNING id, conversation_id
     )
-    INSERT INTO core.messages (
-      environment, chatwoot_message_id, conversation_id, chatwoot_conversation_id,
-      sender_type, sender_id, message_type, content, content_type, content_attributes,
-      is_private, status, external_source_ids, echo_id, sent_at, last_event_at
-    ) VALUES (
-      $1, $2,
-      (SELECT id FROM conversation_ref),
-      $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-    )
-    ON CONFLICT (environment, chatwoot_message_id, sent_at) DO UPDATE
-    SET sender_type = EXCLUDED.sender_type,
-        sender_id = EXCLUDED.sender_id,
-        message_type = EXCLUDED.message_type,
-        content = EXCLUDED.content,
-        content_type = EXCLUDED.content_type,
-        content_attributes = EXCLUDED.content_attributes,
-        is_private = EXCLUDED.is_private,
-        status = EXCLUDED.status,
-        external_source_ids = EXCLUDED.external_source_ids,
-        echo_id = EXCLUDED.echo_id,
-        last_event_at = EXCLUDED.last_event_at
-    WHERE core.messages.last_event_at IS NULL
-       OR EXCLUDED.last_event_at >= core.messages.last_event_at
-    RETURNING id, conversation_id`,
+    SELECT id, conversation_id FROM updated_existing
+    UNION ALL
+    SELECT id, conversation_id FROM inserted
+    UNION ALL
+    SELECT id, conversation_id FROM existing_message
+    LIMIT 1`,
     [
       message.environment,
       message.chatwootMessageId,
@@ -91,8 +131,9 @@ export async function upsertMessage(
      FROM core.messages
      WHERE environment = $1
        AND chatwoot_message_id = $2
-       AND sent_at = $3`,
-    [message.environment, message.chatwootMessageId, message.sentAt],
+     ORDER BY sent_at DESC
+     LIMIT 1`,
+    [message.environment, message.chatwootMessageId],
   );
 
   const existingRow = existing.rows[0];
