@@ -82,10 +82,20 @@ Regras criticas:
 
 Antes de abrir Fase 2, validar a Fase 1 com dados reais controlados:
 
+- Ler `docs/CHATWOOT_SHADOW_MODE_REPORT.md`.
 - Rodar `/admin/replay/:raw_event_id` contra Supabase real e confirmar que nao duplica `core.*`.
 - Rodar `/admin/reconcile` com janela pequena contra Chatwoot real e confirmar inserts em `raw.*`.
 - Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
 - Iniciar shadow mode com webhooks reais por periodo combinado.
+
+Status do shadow mode:
+
+- Farejador publicado em Coolify.
+- Chatwoot acessivel em `http://76.13.164.152/app/accounts/1/dashboard`.
+- `/healthz` responde `ok`.
+- Webhook real funcionou apos ajuste de HMAC oficial.
+- URL do webhook da inbox API foi removida temporariamente por ruido de `message_updated`.
+- Proximo passo: decidir filtro/dedup para `message_updated` antes de religar.
 
 ## Fluxo recomendado para Kimi
 
