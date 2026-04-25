@@ -9,7 +9,7 @@ export async function upsertContact(
     `INSERT INTO core.contacts (
       environment, chatwoot_contact_id, name, phone_e164, email, identifier,
       channel_type, country, city, custom_attributes, first_seen_at, last_seen_at, last_event_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, now()), $12, $13)
     ON CONFLICT (environment, chatwoot_contact_id) DO UPDATE
     SET name = EXCLUDED.name,
         phone_e164 = EXCLUDED.phone_e164,
@@ -19,7 +19,6 @@ export async function upsertContact(
         country = EXCLUDED.country,
         city = EXCLUDED.city,
         custom_attributes = EXCLUDED.custom_attributes,
-        first_seen_at = EXCLUDED.first_seen_at,
         last_seen_at = EXCLUDED.last_seen_at,
         last_event_at = EXCLUDED.last_event_at,
         updated_at = now()

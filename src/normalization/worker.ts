@@ -4,7 +4,7 @@ import { env } from '../shared/config/env.js';
 import { logger } from '../shared/logger.js';
 import { dispatch, SkipEventError } from './dispatcher.js';
 
-const BATCH_SIZE = 50;
+const MAX_PER_POLL = 50; // máximo de eventos drenados por ciclo de poll; encerra mais cedo se a fila esvaziar
 const POLL_INTERVAL_MS = 5_000;
 
 interface RawEventRow {
@@ -20,7 +20,7 @@ export async function pollAndNormalize(): Promise<void> {
 
   try {
     client = await pool.connect();
-    for (let processedCount = 0; processedCount < BATCH_SIZE; processedCount++) {
+    for (let processedCount = 0; processedCount < MAX_PER_POLL; processedCount++) {
       let row: RawEventRow | undefined;
 
       try {

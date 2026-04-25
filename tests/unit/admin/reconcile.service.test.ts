@@ -247,11 +247,11 @@ describe('reconcile service', () => {
     );
 
     expect(insertRawEvent.mock.calls[0]?.[1].chatwootDeliveryId).toBe(
-      'reconcile:conv:prod:123:1776859200',
+      'reconcile-v2:conv:prod:1:123:1776859200',
     );
     expect(insertRawEvent.mock.calls[0]?.[1].environment).toBe('prod');
     expect(insertRawEvent.mock.calls[1]?.[1].chatwootDeliveryId).toBe(
-      'reconcile:msg:prod:456:1776859200',
+      'reconcile-v2:msg:prod:1:456:1776859200',
     );
     expect(insertRawEvent.mock.calls[1]?.[1].environment).toBe('prod');
   });

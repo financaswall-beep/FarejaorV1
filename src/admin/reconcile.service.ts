@@ -129,7 +129,7 @@ function buildConversationEvent(input: ReconcileInput, conversation: MappedConve
     conversationId: conversation.id,
     input: {
       environment: input.environment,
-      chatwootDeliveryId: `reconcile:conv:${input.environment}:${conversation.id}:${unixSeconds(updatedAt)}`,
+      chatwootDeliveryId: `reconcile-v2:conv:${input.environment}:${env.CHATWOOT_ACCOUNT_ID ?? 0}:${conversation.id}:${unixSeconds(updatedAt)}`,
       chatwootSignature: 'reconcile:synthetic',
       chatwootTimestamp: updatedAt,
       eventType: 'conversation_updated',
@@ -153,7 +153,7 @@ function buildMessageEvent(
     conversationId,
     input: {
       environment: input.environment,
-      chatwootDeliveryId: `reconcile:msg:${input.environment}:${message.id}:${unixSeconds(createdAt)}`,
+      chatwootDeliveryId: `reconcile-v2:msg:${input.environment}:${env.CHATWOOT_ACCOUNT_ID ?? 0}:${message.id}:${unixSeconds(createdAt)}`,
       chatwootSignature: 'reconcile:synthetic',
       chatwootTimestamp: createdAt,
       eventType: 'message_created',

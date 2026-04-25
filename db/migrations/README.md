@@ -8,6 +8,8 @@ Ordem de execução:
 4. `0004_analytics_layer.sql` — conversation_facts (EAV com proveniência), signals, classifications, customer_journey, linguistic_hints
 5. `0005_ops_layer.sql` — stock_snapshots, enrichment_jobs, bot_events, erasure_log + `ops.anonymize_contact()`
 6. `0006_concurrency_guards.sql` — `raw.delivery_seen` (bouncer dedup), `last_event_at` + trigger watermark em core, helper `ops.ensure_monthly_partitions()`
+7. `0007_raw_immutability_guard.sql` — trigger BEFORE UPDATE/DELETE em `raw.raw_events` enforçando imutabilidade do payload (whitelist: processing_status, processing_error, processed_at)
+8. `0008_idempotency_constraints.sql` — UNIQUE constraints em `core.conversation_status_events` e `core.conversation_assignments` com script de dedup defensivo prévio
 
 ## Convenções
 
@@ -75,14 +77,21 @@ As migrations criam partições iniciais até 2026-06. A migration `0006` adicio
 SELECT * FROM ops.ensure_monthly_partitions(6);
 ```
 
-**Produção** — agende via `pg_cron` (disponível no Supabase):
+**Produção** — agende via `pg_cron` (disponível no Supabase). **Isso é requisito de produção, não opcional.** Sem o cron, as partições de julho em diante não existem e inserções falham silenciosamente:
+
 ```sql
+-- Rodar UMA VEZ para ativar o agendamento:
 SELECT cron.schedule(
   'farejador-ensure-partitions',
-  '0 3 20 * *',
+  '0 3 20 * *',  -- dia 20 de cada mês, 03:00 UTC — antes do fim do mês
   $$ SELECT ops.ensure_monthly_partitions(3) $$
 );
+
+-- Verificar que ficou ativo:
+SELECT jobname, schedule, active FROM cron.job WHERE jobname = 'farejador-ensure-partitions';
 ```
+
+Para habilitar pg_cron no Supabase: Dashboard → Database → Extensions → buscar `pg_cron` → Enable.
 
 Alternativa industrial: instalar `pg_partman` para gestão automática com retenção/detach. Para o volume atual, o helper é suficiente.
 
