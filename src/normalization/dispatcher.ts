@@ -34,6 +34,51 @@ export class SkipEventError extends Error {
   }
 }
 
+function readObject(source: unknown, key: string): Record<string, unknown> | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
+
+function findNestedContactPayload(payload: Record<string, unknown>): Record<string, unknown> | null {
+  const topLevelSender = readObject(payload, 'sender');
+  const topLevelMeta = readObject(payload, 'meta');
+  const topLevelMetaSender = readObject(topLevelMeta, 'sender');
+  const conversation = readObject(payload, 'conversation');
+  const conversationMeta = readObject(conversation, 'meta');
+  const conversationSender = readObject(conversationMeta, 'sender');
+  const candidate = topLevelMetaSender ?? conversationSender ?? topLevelSender;
+
+  if (!candidate || typeof candidate.id !== 'number') {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: typeof candidate.name === 'string' ? candidate.name : null,
+    email: typeof candidate.email === 'string' ? candidate.email : null,
+    phone_number: typeof candidate.phone_number === 'string' ? candidate.phone_number : null,
+    identifier: typeof candidate.identifier === 'string' ? candidate.identifier : null,
+    additional_attributes: readObject(candidate, 'additional_attributes') ?? {},
+    custom_attributes: readObject(candidate, 'custom_attributes') ?? {},
+  };
+}
+
+async function upsertNestedContactIfPresent(
+  client: PoolClient,
+  payload: Record<string, unknown>,
+  environment: string,
+  lastEventAt: Date,
+): Promise<void> {
+  const contactPayload = findNestedContactPayload(payload);
+  if (!contactPayload) {
+    return;
+  }
+
+  const contact = mapContact(contactPayload, environment, lastEventAt);
+  await upsertContact(client, contact);
+}
+
 export async function dispatch(
   client: PoolClient,
   rawEvent: RawEvent,
@@ -62,6 +107,8 @@ export async function dispatch(
 
     case 'conversation_created':
     case 'conversation_updated': {
+      await upsertNestedContactIfPresent(client, payload, environment, lastEventAt);
+
       const conversation = mapConversation(payload, environment, lastEventAt);
       const conversationId = await upsertConversation(client, conversation);
 
@@ -142,6 +189,8 @@ export async function dispatch(
 
     case 'message_created':
     case 'message_updated': {
+      await upsertNestedContactIfPresent(client, payload, environment, lastEventAt);
+
       const message = mapMessage(payload, environment, lastEventAt);
       const upsertedMessage = await upsertMessage(client, message);
 

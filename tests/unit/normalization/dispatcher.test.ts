@@ -87,6 +87,42 @@ describe('dispatcher', () => {
     expect(upsertCall).toBeDefined();
   });
 
+  it('upserts nested contact before conversation when sender is present in conversation meta', async () => {
+    const { dispatch } = await loadDispatcher();
+    const client = createMockClient();
+
+    await dispatch(client as unknown as import('pg').PoolClient, {
+      id: 21,
+      event_type: 'conversation_created',
+      payload: {
+        id: 303,
+        status: 'open',
+        inbox_id: 1,
+        meta: {
+          sender: {
+            id: 404,
+            name: 'Contato Aninhado',
+            email: 'contato@example.com',
+            type: 'contact',
+          },
+        },
+      },
+      environment,
+      chatwoot_timestamp: lastEventAt,
+    });
+
+    const calls = client.query.mock.calls;
+    const contactIndex = calls.findIndex((c) =>
+      (c[0] as string).includes('INSERT INTO core.contacts'),
+    );
+    const conversationIndex = calls.findIndex((c) =>
+      (c[0] as string).includes('INSERT INTO core.conversations'),
+    );
+
+    expect(contactIndex).toBeGreaterThanOrEqual(0);
+    expect(conversationIndex).toBeGreaterThan(contactIndex);
+  });
+
   it('dispatches conversation_updated with tags', async () => {
     const { dispatch } = await loadDispatcher();
     const client = createMockClient();
@@ -184,6 +220,40 @@ describe('dispatcher', () => {
       (c[0] as string).includes('INSERT INTO core.messages'),
     );
     expect(msgUpsert).toBeDefined();
+  });
+
+  it('upserts nested contact before message when sender is present', async () => {
+    const { dispatch } = await loadDispatcher();
+    const client = createMockClient();
+
+    await dispatch(client as unknown as import('pg').PoolClient, {
+      id: 22,
+      event_type: 'message_created',
+      payload: {
+        id: 505,
+        message_type: 'incoming',
+        content: 'mensagem',
+        conversation: { id: 303 },
+        sender: {
+          id: 404,
+          name: 'Contato Mensagem',
+          email: 'mensagem@example.com',
+        },
+      },
+      environment,
+      chatwoot_timestamp: lastEventAt,
+    });
+
+    const calls = client.query.mock.calls;
+    const contactIndex = calls.findIndex((c) =>
+      (c[0] as string).includes('INSERT INTO core.contacts'),
+    );
+    const messageIndex = calls.findIndex((c) =>
+      (c[0] as string).includes('INSERT INTO core.messages'),
+    );
+
+    expect(contactIndex).toBeGreaterThanOrEqual(0);
+    expect(messageIndex).toBeGreaterThan(contactIndex);
   });
 
   it('dispatches message_created with attachments', async () => {
