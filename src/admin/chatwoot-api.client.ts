@@ -104,8 +104,9 @@ export class ChatwootApiClient {
 
   async listConversations(input: ListConversationsInput): Promise<ChatwootPage> {
     const url = new URL(`${this.baseUrl}/accounts/${this.accountId}/conversations`);
-    url.searchParams.set('q[updated_at_gteq]', input.since.toISOString());
-    url.searchParams.set('q[updated_at_lteq]', input.until.toISOString());
+    // Chatwoot list conversations does not consistently support updated_at q filters
+    // across self-hosted versions. The reconcile service filters the returned page.
+    url.searchParams.set('status', 'all');
     url.searchParams.set('page', String(input.page));
 
     return this.requestPage(url, input.page);

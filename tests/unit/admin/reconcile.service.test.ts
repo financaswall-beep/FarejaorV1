@@ -35,7 +35,7 @@ async function loadReconcile() {
   return import('../../../src/admin/reconcile.service.js');
 }
 
-function createConversation(id: number, updatedAt = '2024-04-24T23:06:40Z') {
+function createConversation(id: number, updatedAt = '2026-04-22T12:00:00Z') {
   return {
     id,
     account_id: 1,
@@ -43,7 +43,7 @@ function createConversation(id: number, updatedAt = '2024-04-24T23:06:40Z') {
   };
 }
 
-function createMessage(id: number, conversationId: number, createdAt = '2024-04-24T23:06:40Z') {
+function createMessage(id: number, conversationId: number, createdAt = '2026-04-22T12:00:00Z') {
   return {
     id,
     conversation_id: conversationId,
@@ -187,6 +187,39 @@ describe('reconcile service', () => {
     expect(result.pages_fetched).toBe(3);
   });
 
+  it('filters conversations outside the requested updated_at window', async () => {
+    const { reconcile } = await loadReconcile();
+    const pool = createPool();
+    const chatwootClient: ReconcileChatwootClient = {
+      listConversations: vi.fn().mockResolvedValue({
+        items: [
+          createConversation(1, '2026-04-19T23:59:59Z'),
+          createConversation(2, '2026-04-22T12:00:00Z'),
+          createConversation(3, '2026-04-24T00:00:01Z'),
+        ],
+        hasMore: false,
+        page: 1,
+      }),
+      listMessages: vi.fn().mockResolvedValue({ items: [], hasMore: false, page: 1 }),
+    };
+    const insertRawEvent = vi.fn().mockResolvedValue(1);
+
+    const result = await reconcile(
+      {
+        since: new Date('2026-04-20T00:00:00Z'),
+        until: new Date('2026-04-24T00:00:00Z'),
+        environment: 'prod',
+      },
+      { chatwootClient, pool: pool as never, insertRawEvent },
+    );
+
+    expect(result.inserted).toBe(1);
+    expect(insertRawEvent).toHaveBeenCalledTimes(1);
+    expect(insertRawEvent.mock.calls[0]?.[1].chatwootDeliveryId).toContain(':2:');
+    expect(chatwootClient.listMessages).toHaveBeenCalledTimes(1);
+    expect(chatwootClient.listMessages).toHaveBeenCalledWith({ conversationId: 2, page: 1 });
+  });
+
   it('builds deterministic delivery ids for conversations and messages', async () => {
     const { reconcile } = await loadReconcile();
     const pool = createPool();
@@ -214,11 +247,11 @@ describe('reconcile service', () => {
     );
 
     expect(insertRawEvent.mock.calls[0]?.[1].chatwootDeliveryId).toBe(
-      'reconcile:conv:prod:123:1714000000',
+      'reconcile:conv:prod:123:1776859200',
     );
     expect(insertRawEvent.mock.calls[0]?.[1].environment).toBe('prod');
     expect(insertRawEvent.mock.calls[1]?.[1].chatwootDeliveryId).toBe(
-      'reconcile:msg:prod:456:1714000000',
+      'reconcile:msg:prod:456:1776859200',
     );
     expect(insertRawEvent.mock.calls[1]?.[1].environment).toBe('prod');
   });

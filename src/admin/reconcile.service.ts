@@ -93,6 +93,10 @@ function parseTimestampToDate(value: unknown): Date | null {
   return null;
 }
 
+function isWithinWindow(date: Date, input: ReconcileInput): boolean {
+  return date >= input.since && date <= input.until;
+}
+
 function unixSeconds(date: Date): number {
   return Math.floor(date.getTime() / 1000);
 }
@@ -260,6 +264,16 @@ async function processConversation(
   }
 
   const conversation = conversationResult.data;
+  const updatedAt = parseTimestampToDate(conversation.updated_at);
+  if (!updatedAt) {
+    pushError(context.result, conversation.id, 'conversation updated_at missing or invalid');
+    return;
+  }
+
+  if (!isWithinWindow(updatedAt, input)) {
+    return;
+  }
+
   const conversationEvent = buildConversationEvent(input, conversation);
   if (!conversationEvent) {
     pushError(context.result, conversation.id, 'conversation updated_at missing or invalid');

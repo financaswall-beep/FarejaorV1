@@ -60,6 +60,9 @@ describe('ChatwootApiClient', () => {
 
     expect(page.items).toEqual([{ id: 123, updated_at: '2026-04-24T12:00:00Z' }]);
     expect(page.hasMore).toBe(false);
+    const requestedUrl = fetchMock.mock.calls[0]?.[0] as URL;
+    expect(requestedUrl.searchParams.get('status')).toBe('all');
+    expect(requestedUrl.searchParams.has('q[updated_at_gteq]')).toBe(false);
   });
 
   it('retries 5xx responses up to 3 attempts and then throws', async () => {
