@@ -21,6 +21,7 @@ nunca `process.env.X` direto.
 | `CHATWOOT_ACCOUNT_ID` | sim (admin) | Conta Chatwoot para reconcile. | `1` |
 | `ADMIN_AUTH_TOKEN` | sim | Bearer simples para proteger `/admin/*`. | `<long-random>` |
 | `LOG_LEVEL` | não | `trace`/`debug`/`info`/`warn`/`error`. Default `info` em prod, `debug` em dev. | `info` |
+| `SKIP_EVENT_TYPES` | não | Lista CSV de `event_type` a marcar como `skipped` na normalização. `raw.raw_events` continua sendo gravado. Default vazio. | `message_updated` |
 
 ## Regras
 

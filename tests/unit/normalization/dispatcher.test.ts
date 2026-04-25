@@ -243,4 +243,51 @@ describe('dispatcher', () => {
       }),
     ).rejects.toBeInstanceOf(SkipEventError);
   });
+
+  it('throws SkipEventError when event_type is in SKIP_EVENT_TYPES', async () => {
+    process.env.SKIP_EVENT_TYPES = 'message_updated';
+    const { dispatch, SkipEventError } = await loadDispatcher();
+    const client = createMockClient();
+
+    await expect(
+      dispatch(client as unknown as import('pg').PoolClient, {
+        id: 9,
+        event_type: 'message_updated',
+        payload: { id: 1, conversation: { id: 1 }, content: 'x' },
+        environment,
+        chatwoot_timestamp: lastEventAt,
+      }),
+    ).rejects.toBeInstanceOf(SkipEventError);
+
+    const calls = client.query.mock.calls;
+    const upsertMessage = calls.find((c) =>
+      (c[0] as string).includes('INSERT INTO core.messages'),
+    );
+    expect(upsertMessage).toBeUndefined();
+
+    delete process.env.SKIP_EVENT_TYPES;
+  });
+
+  it('does not skip events that are not in SKIP_EVENT_TYPES', async () => {
+    process.env.SKIP_EVENT_TYPES = 'message_updated';
+    const { dispatch } = await loadDispatcher();
+    const client = createMockClient();
+    const messageCreated = (await import('../../fixtures/chatwoot/message_created.json')).default;
+
+    await dispatch(client as unknown as import('pg').PoolClient, {
+      id: 10,
+      event_type: 'message_created',
+      payload: messageCreated,
+      environment,
+      chatwoot_timestamp: lastEventAt,
+    });
+
+    const calls = client.query.mock.calls;
+    const upsertMessage = calls.find((c) =>
+      (c[0] as string).includes('INSERT INTO core.messages'),
+    );
+    expect(upsertMessage).toBeDefined();
+
+    delete process.env.SKIP_EVENT_TYPES;
+  });
 });

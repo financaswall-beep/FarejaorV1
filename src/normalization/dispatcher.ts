@@ -1,5 +1,6 @@
 import type { PoolClient } from 'pg';
 import type { ChatwootEventType } from '../shared/types/chatwoot.js';
+import { env } from '../shared/config/env.js';
 import { logger } from '../shared/logger.js';
 import { mapContact } from './contact.mapper.js';
 import { mapConversation } from './conversation.mapper.js';
@@ -42,6 +43,14 @@ export async function dispatch(
   const environment = rawEvent.environment;
   const lastEventAt = rawEvent.chatwoot_timestamp ?? new Date();
   const rawEventId = rawEvent.id;
+
+  if (env.SKIP_EVENT_TYPES.includes(eventType)) {
+    logger.info(
+      { event_type: eventType, raw_event_id: rawEventId },
+      'event type configured to skip - marking as skipped',
+    );
+    throw new SkipEventError(eventType);
+  }
 
   switch (eventType) {
     case 'contact_created':

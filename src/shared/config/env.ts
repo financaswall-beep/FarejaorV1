@@ -16,6 +16,15 @@ const envSchema = z.object({
   CHATWOOT_ACCOUNT_ID: z.string().transform(Number).pipe(z.number().int()).optional(),
   ADMIN_AUTH_TOKEN: z.string().min(1),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
+  SKIP_EVENT_TYPES: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0),
+    ),
 });
 
 export type Env = z.infer<typeof envSchema>;

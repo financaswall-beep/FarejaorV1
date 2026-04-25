@@ -104,7 +104,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] `/admin/reconcile` traz conversas faltantes sem duplicar no contrato unitario.
 - [x] Farejador publicado no Coolify e conectado ao Supabase.
 - [x] Webhook real Chatwoot -> Farejador confirmado em `raw.raw_events`.
-- [ ] Definir protecao contra ruido de `message_updated` antes de religar webhook da inbox API.
+- [x] Definir protecao contra ruido de `message_updated` antes de religar webhook da inbox API. Implementado via `SKIP_EVENT_TYPES` (CSV) com filtro no dispatcher; raw permanece gravado e o evento e marcado como `skipped`.
 - [ ] Replay real nao duplica status events, assignments, messages ou attachments.
 - [ ] Dois workers nao pegam o mesmo raw_event em teste/integracao com Postgres.
 - [ ] Shadow mode com webhooks reais por periodo combinado.

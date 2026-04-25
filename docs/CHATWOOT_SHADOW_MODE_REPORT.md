@@ -192,17 +192,26 @@ Religar somente depois de implementar protecao contra `message_updated` ruidoso.
 
 ## Recomendacao para o proximo passo
 
-Antes de religar o webhook:
+Filtro implementado no codigo (Opcao 1 - ignorar via configuracao):
 
-1. Adicionar uma regra de shadow mode para `message_updated`.
-2. Opcoes aceitaveis:
-   - ignorar `message_updated` temporariamente via configuracao;
-   - ou deduplicar por chave semantica `(environment, event_type, message_id, updated_at/content hash)`;
-   - ou aceitar somente `message_created` enquanto o projeto esta em shadow mode.
-3. Atualizar docs e testes.
-4. Drenar/limpar fila de teste gerada.
-5. Reativar webhook com cuidado.
-6. Enviar uma unica mensagem nova e confirmar `raw` + `core`.
+- Nova env var `SKIP_EVENT_TYPES` (lista CSV).
+- Dispatcher (`src/normalization/dispatcher.ts`) verifica antes do switch e lanca `SkipEventError`.
+- Worker ja trata `SkipEventError` marcando `processing_status='skipped'`.
+- `raw.raw_events` continua sendo gravado; nada se perde da auditoria.
+
+Para religar o webhook com seguranca:
+
+1. No Coolify, definir `SKIP_EVENT_TYPES=message_updated` no servico Farejador e redeploy.
+2. Conferir `/healthz` ok.
+3. Drenar fila atual: rodar o worker ate `pending=0` (eventos antigos viram `skipped`).
+4. Reativar URL do webhook na inbox API do Chatwoot.
+5. Enviar uma unica mensagem nova e confirmar:
+   - `raw.raw_events` recebe `message_created` e (eventuais) `message_updated`.
+   - `core.messages` recebe a mensagem (vinda do `message_created`).
+   - `message_updated` aparece como `processing_status='skipped'`.
+6. Quando o projeto sair do shadow mode, decidir entre:
+   - manter skip de `message_updated`;
+   - ou trocar por dedup semantica por `(environment, message_id, content hash)`.
 
 ## Prompt para Kimi
 

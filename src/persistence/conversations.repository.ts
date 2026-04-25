@@ -12,9 +12,11 @@ export async function upsertConversation(
       priority, started_at, first_reply_at, last_activity_at, resolved_at, waiting_since,
       message_count_cache, additional_attributes, custom_attributes, last_event_at
     ) VALUES (
-      $1, $2, $3, $4, $5,
-      (SELECT id FROM core.contacts WHERE environment = $1 AND chatwoot_contact_id = $6),
-      $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+      $1::text, $2::bigint, $3::bigint, $4::bigint, $5::text,
+      (SELECT id FROM core.contacts WHERE environment = $1::text AND chatwoot_contact_id = $6::bigint),
+      $7::text, $8::bigint, $9::bigint, $10::text, $11::timestamptz, $12::timestamptz,
+      $13::timestamptz, $14::timestamptz, $15::timestamptz, $16::integer,
+      $17::jsonb, $18::jsonb, $19::timestamptz
     )
     ON CONFLICT (environment, chatwoot_conversation_id) DO UPDATE
     SET chatwoot_account_id = EXCLUDED.chatwoot_account_id,
@@ -69,8 +71,8 @@ export async function upsertConversation(
   const existing = await client.query<{ id: string }>(
     `SELECT id
      FROM core.conversations
-     WHERE environment = $1
-       AND chatwoot_conversation_id = $2`,
+     WHERE environment = $1::text
+       AND chatwoot_conversation_id = $2::bigint`,
     [conversation.environment, conversation.chatwootConversationId],
   );
 

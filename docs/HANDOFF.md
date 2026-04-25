@@ -95,7 +95,8 @@ Status do shadow mode:
 - `/healthz` responde `ok`.
 - Webhook real funcionou apos ajuste de HMAC oficial.
 - URL do webhook da inbox API foi removida temporariamente por ruido de `message_updated`.
-- Proximo passo: decidir filtro/dedup para `message_updated` antes de religar.
+- Filtro implementado no dispatcher: definir `SKIP_EVENT_TYPES=message_updated` no Coolify para o Farejador marcar esse tipo como `skipped` (raw continua gravado).
+- Proximo passo operacional: drenar fila atual, religar webhook com `SKIP_EVENT_TYPES` ativo e validar shadow mode com `message_created`.
 
 ## Fluxo recomendado para Kimi
 
