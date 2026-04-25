@@ -70,9 +70,13 @@ describe('message.mapper', () => {
   it('reads conversation id and sender type from nested real Chatwoot payload fields', () => {
     const payload = {
       ...messageCreated,
+      account_id: undefined,
+      inbox_id: undefined,
       conversation_id: undefined,
       sender_type: undefined,
       sender_id: undefined,
+      account: { id: 1 },
+      inbox: { id: 5 },
       conversation: { id: 303 },
       sender: { id: 404, type: 'contact' },
     };
@@ -80,7 +84,27 @@ describe('message.mapper', () => {
     const result = mapMessage(payload, environment, lastEventAt);
 
     expect(result.chatwootConversationId).toBe(303);
+    expect(result.chatwootAccountId).toBe(1);
+    expect(result.chatwootInboxId).toBe(5);
     expect(result.senderType).toBe('contact');
     expect(result.senderId).toBe(404);
+  });
+
+  it('reads sender type from conversation meta when top-level sender lacks type', () => {
+    const payload = {
+      ...messageCreated,
+      sender_type: undefined,
+      sender: { id: 404 },
+      conversation: {
+        id: 303,
+        meta: {
+          sender: { id: 404, type: 'contact' },
+        },
+      },
+    };
+
+    const result = mapMessage(payload, environment, lastEventAt);
+
+    expect(result.senderType).toBe('contact');
   });
 });

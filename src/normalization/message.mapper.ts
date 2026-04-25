@@ -58,6 +58,12 @@ function readNestedNumber(source: unknown, key: string): number | null {
   return typeof value === 'number' ? value : null;
 }
 
+function readNestedObject(source: unknown, key: string): Record<string, unknown> | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
+
 function readNestedString(source: unknown, key: string): string | null {
   if (!source || typeof source !== 'object') return null;
   const value = (source as Record<string, unknown>)[key];
@@ -73,8 +79,16 @@ export function mapMessage(
   const rawPayload = payload as Record<string, unknown>;
   const nestedConversation = rawPayload.conversation;
   const nestedSender = rawPayload.sender;
+  const nestedConversationMeta = readNestedObject(nestedConversation, 'meta');
+  const nestedConversationMetaSender = readNestedObject(nestedConversationMeta, 'sender');
+  const nestedAccount = rawPayload.account;
+  const nestedInbox = rawPayload.inbox;
 
-  const senderType = normalizeSenderType(p.sender_type ?? readNestedString(nestedSender, 'type'));
+  const senderType = normalizeSenderType(
+    p.sender_type
+      ?? readNestedString(nestedSender, 'type')
+      ?? readNestedString(nestedConversationMetaSender, 'type'),
+  );
 
   let senderId: number | null = p.sender_id ?? null;
   if (
@@ -93,8 +107,8 @@ export function mapMessage(
   return {
     environment,
     chatwootMessageId: p.id,
-    chatwootAccountId: p.account_id ?? 0,
-    chatwootInboxId: p.inbox_id ?? null,
+    chatwootAccountId: p.account_id ?? readNestedNumber(nestedAccount, 'id') ?? 0,
+    chatwootInboxId: p.inbox_id ?? readNestedNumber(nestedInbox, 'id'),
     chatwootConversationId,
     senderType,
     senderId,
