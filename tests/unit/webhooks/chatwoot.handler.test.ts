@@ -42,15 +42,17 @@ function createReply(): FastifyReply {
 
 function createRequest(payload: unknown, options: RequestOptions = {}): FastifyRequest {
   const raw = Buffer.from(JSON.stringify(payload));
-  const signature =
-    options.signatureOverride ?? createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(raw).digest('hex');
+  const timestamp = options.timestamp ?? String(Math.floor(Date.now() / 1000));
+  const signedPayload = Buffer.concat([Buffer.from(`${timestamp}.`, 'utf8'), raw]);
+  const signature = options.signatureOverride
+    ?? createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(signedPayload).digest('hex');
   const headers: Record<string, string> = {
     'x-chatwoot-signature': signature,
     'x-chatwoot-delivery': options.deliveryId ?? 'delivery-1',
   };
 
   if (!options.omitTimestamp) {
-    headers['x-chatwoot-timestamp'] = options.timestamp ?? String(Math.floor(Date.now() / 1000));
+    headers['x-chatwoot-timestamp'] = timestamp;
   }
 
   return {

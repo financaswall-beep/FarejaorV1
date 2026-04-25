@@ -24,18 +24,29 @@ describe('chatwoot hmac helpers', () => {
   it('accepts a valid HMAC signature', async () => {
     const { validateHmac } = await loadHmacModule();
     const body = Buffer.from('{"event":"message_created"}');
-    const signature = createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(body).digest('hex');
+    const timestamp = '1777077000';
+    const signedPayload = Buffer.concat([Buffer.from(`${timestamp}.`, 'utf8'), body]);
+    const signature = createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(signedPayload).digest('hex');
 
-    expect(validateHmac(body, signature)).toBe(true);
-    expect(validateHmac(body, `sha256=${signature}`)).toBe(true);
+    expect(validateHmac(body, signature, timestamp)).toBe(true);
+    expect(validateHmac(body, `sha256=${signature}`, timestamp)).toBe(true);
   });
 
   it('rejects invalid HMAC signatures', async () => {
     const { validateHmac } = await loadHmacModule();
     const body = Buffer.from('{"event":"message_created"}');
 
-    expect(validateHmac(body, 'invalid')).toBe(false);
-    expect(validateHmac(body, '0'.repeat(64))).toBe(false);
+    expect(validateHmac(body, 'invalid', '1777077000')).toBe(false);
+    expect(validateHmac(body, '0'.repeat(64), '1777077000')).toBe(false);
+  });
+
+  it('rejects signatures that omit the timestamp from the signed payload', async () => {
+    const { validateHmac } = await loadHmacModule();
+    const body = Buffer.from('{"event":"message_created"}');
+    const timestamp = '1777077000';
+    const signature = createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(body).digest('hex');
+
+    expect(validateHmac(body, signature, timestamp)).toBe(false);
   });
 
   it('rejects expired timestamps', async () => {

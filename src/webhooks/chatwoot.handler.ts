@@ -58,7 +58,7 @@ export async function chatwootWebhookHandler(
     return reply.status(401).send({ error: 'Timestamp invalid' });
   }
 
-  if (!validateHmac(rawBody, chatwootSignature)) {
+  if (!validateHmac(rawBody, chatwootSignature, chatwootTimestamp)) {
     logger.warn(logCtx, 'webhook HMAC validation failed');
     return reply.status(401).send({ error: 'Invalid signature' });
   }

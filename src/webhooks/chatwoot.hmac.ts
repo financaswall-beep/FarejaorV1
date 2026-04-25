@@ -26,13 +26,18 @@ export function validateTimestamp(timestamp: string): boolean {
   return ageMs <= maxAgeMs && ageMs >= -allowedFutureSkewMs;
 }
 
-export function validateHmac(rawBody: Buffer, signature: string): boolean {
-  const expected = createHmac('sha256', env.CHATWOOT_HMAC_SECRET).update(rawBody).digest('hex');
+function timingSafeHexEqual(expected: string, provided: string): boolean {
+  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(provided, 'hex'));
+}
+
+export function validateHmac(rawBody: Buffer, signature: string, timestamp: string): boolean {
+  const signedPayload = Buffer.concat([Buffer.from(`${timestamp}.`, 'utf8'), rawBody]);
+  const expected = createHmac('sha256', env.CHATWOOT_HMAC_SECRET).update(signedPayload).digest('hex');
   const provided = signature.startsWith('sha256=') ? signature.slice(7) : signature;
 
   if (!/^[a-f0-9]{64}$/i.test(provided)) {
     return false;
   }
 
-  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(provided, 'hex'));
+  return timingSafeHexEqual(expected, provided);
 }
