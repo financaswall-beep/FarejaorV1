@@ -39,4 +39,31 @@ describe('conversation.mapper', () => {
     expect(result.currentStatus).toBe('pending');
     expect(result.resolvedAt).toBeNull();
   });
+
+  it('reads contact id from nested real Chatwoot fields when contact_id is missing', () => {
+    const payload = {
+      ...conversationCreated,
+      contact_id: undefined,
+      contact_inbox: { contact_id: 301 },
+    };
+
+    const result = mapConversation(payload, environment, lastEventAt);
+
+    expect(result.chatwootContactId).toBe(301);
+  });
+
+  it('reads contact id from meta sender when contact_id and contact_inbox are missing', () => {
+    const payload = {
+      ...conversationCreated,
+      contact_id: undefined,
+      contact_inbox: undefined,
+      meta: {
+        sender: { id: 302, type: 'contact' },
+      },
+    };
+
+    const result = mapConversation(payload, environment, lastEventAt);
+
+    expect(result.chatwootContactId).toBe(302);
+  });
 });

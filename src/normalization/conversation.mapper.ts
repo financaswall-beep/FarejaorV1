@@ -30,19 +30,39 @@ function parseTimestamp(ts: unknown): Date | null {
   return null;
 }
 
+function readNestedObject(source: unknown, key: string): Record<string, unknown> | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
+
+function readNestedNumber(source: unknown, key: string): number | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  return typeof value === 'number' ? value : null;
+}
+
 export function mapConversation(
   payload: unknown,
   environment: string,
   lastEventAt: Date,
 ): MappedConversation {
   const p = payload as ChatwootConversation;
+  const rawPayload = payload as Record<string, unknown>;
 
   const additionalAttributes = (p.additional_attributes ?? {}) as Record<string, unknown>;
   const customAttributes = (p.custom_attributes ?? {}) as Record<string, unknown>;
+  const meta = readNestedObject(rawPayload, 'meta');
+  const metaSender = readNestedObject(meta, 'sender');
+  const contactInbox = readNestedObject(rawPayload, 'contact_inbox');
 
   const createdAt = parseTimestamp(p.created_at) ?? lastEventAt;
   const updatedAt = parseTimestamp(p.updated_at);
   const timestamp = parseTimestamp(p.timestamp);
+  const chatwootContactId =
+    p.contact_id
+    ?? readNestedNumber(contactInbox, 'contact_id')
+    ?? readNestedNumber(metaSender, 'id');
 
   const resolvedAt =
     p.status === 'resolved' ? (updatedAt ?? timestamp ?? lastEventAt) : null;
@@ -53,7 +73,7 @@ export function mapConversation(
     chatwootAccountId: p.account_id ?? 0,
     chatwootInboxId: p.inbox_id ?? null,
     channelType: (additionalAttributes.channel_type as string) ?? null,
-    chatwootContactId: p.contact_id ?? null,
+    chatwootContactId: chatwootContactId ?? null,
     currentStatus: p.status ?? 'open',
     currentAssigneeId: p.assignee_id ?? null,
     currentTeamId: p.team_id ?? null,
