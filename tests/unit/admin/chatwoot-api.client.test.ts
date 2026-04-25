@@ -193,4 +193,25 @@ describe('ChatwootApiClient', () => {
 
     expect(page.hasMore).toBe(true);
   });
+
+  it('accepts top-level payload responses used by Chatwoot messages API', async () => {
+    const { ChatwootApiClient } = await loadClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        payload: [{ id: 18, conversation_id: 8, created_at: 1777148517 }],
+        meta: {},
+      }),
+    );
+    const client = new ChatwootApiClient({
+      baseUrl: 'https://chatwoot.example.test/api/v1',
+      accountId: 1,
+      apiToken: 'secret-token-value',
+      fetchFn: fetchMock as typeof fetch,
+    });
+
+    const page = await client.listMessages({ conversationId: 8, page: 1 });
+
+    expect(page.items).toEqual([{ id: 18, conversation_id: 8, created_at: 1777148517 }]);
+    expect(page.hasMore).toBe(false);
+  });
 });

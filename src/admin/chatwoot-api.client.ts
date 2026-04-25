@@ -8,8 +8,28 @@ const REQUEST_TIMEOUT_MS = 10_000;
 
 const payloadItemSchema = z.object({}).catchall(z.unknown());
 const chatwootListResponseSchema = z
-  .object({
-    data: z
+  .union([
+    z
+      .object({
+        data: z
+          .object({
+            payload: z.array(payloadItemSchema).default([]),
+            meta: z
+              .object({
+                all_count: z.number().int().nonnegative().optional(),
+                per_page: z.number().int().positive().optional(),
+              })
+              .passthrough()
+              .default({}),
+          })
+          .passthrough(),
+      })
+      .passthrough()
+      .transform((value) => ({
+        payload: value.data.payload,
+        meta: value.data.meta,
+      })),
+    z
       .object({
         payload: z.array(payloadItemSchema).default([]),
         meta: z
@@ -21,8 +41,7 @@ const chatwootListResponseSchema = z
           .default({}),
       })
       .passthrough(),
-  })
-  .passthrough();
+  ]);
 
 export interface ChatwootApiClientConfig {
   baseUrl: string;
@@ -163,9 +182,9 @@ export class ChatwootApiClient {
 
         const parsedJson = JSON.parse(bodyText) as unknown;
         const parsed = chatwootListResponseSchema.parse(parsedJson);
-        const payload = parsed.data.payload;
-        const allCount = parsed.data.meta.all_count ?? payload.length;
-        const perPage = parsed.data.meta.per_page ?? (payload.length > 0 ? payload.length : DEFAULT_PER_PAGE);
+        const payload = parsed.payload;
+        const allCount = parsed.meta.all_count ?? payload.length;
+        const perPage = parsed.meta.per_page ?? (payload.length > 0 ? payload.length : DEFAULT_PER_PAGE);
 
         return {
           items: payload,
