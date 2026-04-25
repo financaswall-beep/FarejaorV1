@@ -52,35 +52,50 @@ function normalizeSenderType(st: unknown): string {
   return valid.includes(lower) ? lower : 'system';
 }
 
+function readNestedNumber(source: unknown, key: string): number | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  return typeof value === 'number' ? value : null;
+}
+
+function readNestedString(source: unknown, key: string): string | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value : null;
+}
+
 export function mapMessage(
   payload: unknown,
   environment: string,
   lastEventAt: Date,
 ): MappedMessage {
   const p = payload as ChatwootMessage;
+  const rawPayload = payload as Record<string, unknown>;
+  const nestedConversation = rawPayload.conversation;
+  const nestedSender = rawPayload.sender;
 
-  const senderType = normalizeSenderType(p.sender_type);
+  const senderType = normalizeSenderType(p.sender_type ?? readNestedString(nestedSender, 'type'));
 
   let senderId: number | null = p.sender_id ?? null;
   if (
     senderId == null &&
-    p.sender &&
-    typeof p.sender === 'object' &&
-    Object.keys(p.sender).length > 0
+    nestedSender &&
+    typeof nestedSender === 'object' &&
+    Object.keys(nestedSender).length > 0
   ) {
-    const s = p.sender as { id?: number };
-    senderId = s.id ?? null;
+    senderId = readNestedNumber(nestedSender, 'id');
   }
 
   const messageType = normalizeMessageType(p.message_type);
   const sentAt = parseTimestamp(p.created_at) ?? lastEventAt;
+  const chatwootConversationId = p.conversation_id ?? readNestedNumber(nestedConversation, 'id') ?? 0;
 
   return {
     environment,
     chatwootMessageId: p.id,
     chatwootAccountId: p.account_id ?? 0,
     chatwootInboxId: p.inbox_id ?? null,
-    chatwootConversationId: p.conversation_id ?? 0,
+    chatwootConversationId,
     senderType,
     senderId,
     messageType,

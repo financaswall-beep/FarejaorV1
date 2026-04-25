@@ -66,4 +66,21 @@ describe('message.mapper', () => {
     const result = mapMessage(payload, environment, lastEventAt);
     expect(result.sentAt).toEqual(lastEventAt);
   });
+
+  it('reads conversation id and sender type from nested real Chatwoot payload fields', () => {
+    const payload = {
+      ...messageCreated,
+      conversation_id: undefined,
+      sender_type: undefined,
+      sender_id: undefined,
+      conversation: { id: 303 },
+      sender: { id: 404, type: 'contact' },
+    };
+
+    const result = mapMessage(payload, environment, lastEventAt);
+
+    expect(result.chatwootConversationId).toBe(303);
+    expect(result.senderType).toBe('contact');
+    expect(result.senderId).toBe(404);
+  });
 });
