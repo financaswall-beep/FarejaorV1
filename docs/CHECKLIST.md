@@ -120,7 +120,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Replay real nao duplica `core.messages`: raw_event `111` reprocessado, contagem da conversa 8 permaneceu estavel.
 - [x] Reconcile real em janela pequena injeta `raw_events` e e idempotente: primeira rodada inseriu reconcile events; segunda rodada retornou `inserted=0`, `skipped_duplicate=12`.
 - [x] Bug real de duplicacao por precisao de timestamp corrigido em `core.messages`; replay dos eventos reconcile nao recriou duplicatas.
-- [ ] Dois workers nao pegam o mesmo raw_event em teste/integracao com Postgres.
+- [x] Dois workers concorrentes validados contra Supabase real em `environment=test`: 80 raw_events, 80 `processed`, 0 duplicatas em `core.messages`.
 - [ ] Shadow mode com webhooks reais por periodo combinado.
 - [ ] Rotacionar secrets antes de producao plena.
 

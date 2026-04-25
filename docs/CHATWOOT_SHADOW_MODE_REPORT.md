@@ -33,7 +33,6 @@ Concluido:
 Pendente antes de considerar Fase 1 fechada:
 
 - Rodar shadow mode por periodo combinado com o webhook ligado.
-- Validar dois workers concorrentes contra Postgres real.
 - Rotacionar secrets antes de producao plena.
 
 ## Acesso e endpoints
@@ -244,6 +243,21 @@ Correcao:
   com timestamp mais preciso.
 - Reprocessar os eventos `reconcile:*` depois da correcao nao recriou duplicatas.
 
+## Concorrencia de worker
+
+Teste executado contra Supabase real com `environment=test`:
+
+```text
+raw_events sinteticos: 80
+workers paralelos: 2
+raw.raw_events processed: 80
+raw.raw_events failed: 0
+duplicatas em core.messages: 0
+```
+
+Conclusao: `FOR UPDATE SKIP LOCKED` funcionou no teste real de concorrencia; dois
+workers nao processaram o mesmo raw_event de forma duplicada.
+
 ## Problema encontrado: enxurrada de message_updated
 
 A inbox API do Chatwoot reenviou muitos eventos `message_updated` da mensagem de teste
@@ -305,9 +319,8 @@ Proximos passos operacionais:
 
 1. Manter o webhook ligado por um periodo curto e monitorado.
 2. Acompanhar `raw.raw_events` por `pending`, `failed` e `skipped`.
-3. Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
-4. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
-5. Quando o projeto sair do shadow mode, decidir entre:
+3. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
+4. Quando o projeto sair do shadow mode, decidir entre:
    - manter skip de `message_updated`;
    - ou trocar por dedup semantica por `(environment, message_id, content hash)`.
 
@@ -355,7 +368,7 @@ final validou contato, conversa e mensagem normalizados e vinculados em core.*.
 
 Pergunta: quais validacoes operacionais faltam antes de fechar Fase 1 e abrir Fase 2a?
 
-Favor avaliar dois workers concorrentes, periodo de shadow mode e rotacao de secrets.
+Favor avaliar periodo de shadow mode e rotacao de secrets.
 ```
 
 ## Riscos atuais
@@ -365,7 +378,6 @@ Favor avaliar dois workers concorrentes, periodo de shadow mode e rotacao de sec
   do banco se necessario.
 - `message_updated` esta filtrado no worker, mas ainda deve ser monitorado em volume.
 - A inbox API pode nao permitir selecao granular de eventos no painel.
-- Ainda falta teste real com dois workers concorrentes.
 - Ainda falta rotacao de secrets antes de producao plena.
 
 ## Veredito

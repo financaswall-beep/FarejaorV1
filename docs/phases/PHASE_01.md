@@ -74,19 +74,22 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
 - Replay real validou reprocessamento sem duplicar `core.messages`.
 - Reconcile real validou insercao de eventos sinteticos, idempotencia por
   `raw.delivery_seen` e dedup de mensagens por `chatwoot_message_id`.
+- Concorrencia de worker validada contra Supabase real:
+  - 80 raw_events em `environment=test`;
+  - 2 workers em paralelo;
+  - 80/80 `processed`;
+  - 0 duplicatas em `core.messages`.
 
 ## Criterios restantes para concluir a Fase 1
 
-1. Teste/integracao com dois workers concorrentes usando Postgres real.
-2. Shadow mode com webhooks reais por periodo combinado.
-3. Rotacao de secrets antes de producao plena.
+1. Shadow mode com webhooks reais por periodo combinado.
+2. Rotacao de secrets antes de producao plena.
 
 ## Fim da Fase 1
 
 A Fase 1 esta tecnicamente entregue e em validacao operacional final. Ela deve ser
-considerada fechada quando concorrencia de worker for validada, secrets forem
-rotacionados e um periodo curto de shadow mode nao mostrar perdas, duplicacoes ou
-fila travada.
+considerada fechada quando secrets forem rotacionados e um periodo curto de shadow
+mode nao mostrar perdas, duplicacoes ou fila travada.
 
 Depois disso, a proxima fase e a **Fase 2a - enrichment deterministico**, escrevendo
 somente em `analytics.*`, ainda sem LLM.

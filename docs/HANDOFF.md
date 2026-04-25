@@ -116,7 +116,12 @@ Status do shadow mode:
   - primeira execucao inseriu eventos `reconcile:*`.
   - segunda execucao retornou `inserted=0`, `skipped_duplicate=12`, `errors=[]`.
   - bug de duplicacao por precisao de timestamp foi corrigido antes do fechamento.
-- Proximo passo operacional: validar concorrencia de worker, monitorar shadow mode por periodo combinado e rotacionar secrets.
+- Concorrencia de worker validada contra Supabase real com `environment=test`:
+  - 80 raw_events sinteticos.
+  - 2 workers executados em paralelo.
+  - 80/80 `processed`.
+  - 0 duplicatas em `core.messages`.
+- Proximo passo operacional: monitorar shadow mode por periodo combinado e rotacionar secrets.
 
 ## Fluxo recomendado para Kimi
 
