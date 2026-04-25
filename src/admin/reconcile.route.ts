@@ -8,6 +8,18 @@ import { logger } from '../shared/logger.js';
 
 const MAX_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
+function unwrapParsedBody(body: unknown): unknown {
+  if (
+    body &&
+    typeof body === 'object' &&
+    'parsed' in body
+  ) {
+    return (body as { parsed: unknown }).parsed;
+  }
+
+  return body;
+}
+
 const bodySchema = z
   .object({
     since: z.string().datetime(),
@@ -22,7 +34,7 @@ export async function registerReconcileRoute(fastify: FastifyInstance): Promise<
   fastify.post('/admin/reconcile', {
     preHandler: requireAdminAuth,
     handler: async (request, reply) => {
-      const parsed = bodySchema.safeParse(request.body);
+      const parsed = bodySchema.safeParse(unwrapParsedBody(request.body));
       if (!parsed.success) {
         return reply.status(400).send({ error: parsed.error.issues[0]?.message ?? 'invalid body' });
       }

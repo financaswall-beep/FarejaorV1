@@ -169,6 +169,43 @@ describe('registerReconcileRoute', () => {
     });
   });
 
+  it('accepts bodies wrapped by the server raw JSON parser', async () => {
+    const result = {
+      inserted: 1,
+      skipped_duplicate: 0,
+      errors: [],
+      pages_fetched: 1,
+      aborted: false,
+      abort_reason: null,
+    };
+    const reconcileMock = vi.fn().mockResolvedValue(result);
+    const { registerReconcileRoute } = await loadReconcileRoute(reconcileMock);
+    const fastify = createFastify();
+    await registerReconcileRoute(fastify);
+    const reply = createReply();
+
+    await fastify._routes['/admin/reconcile'].handler(
+      {
+        body: {
+          raw: Buffer.from('{}'),
+          parsed: {
+            since: '2026-04-20T00:00:00Z',
+            until: '2026-04-24T00:00:00Z',
+          },
+        },
+      },
+      reply,
+    );
+
+    expect(reply.statusCode).toBe(200);
+    expect(reply.payload).toEqual(result);
+    expect(reconcileMock).toHaveBeenCalledWith({
+      since: new Date('2026-04-20T00:00:00Z'),
+      until: new Date('2026-04-24T00:00:00Z'),
+      environment: 'prod',
+    });
+  });
+
   it('returns 502 when the Chatwoot API is unavailable', async () => {
     vi.resetModules();
     Object.assign(process.env, baseEnv);
