@@ -11,6 +11,9 @@ do Chatwoot. A integracao basica esta funcionando:
 - O endpoint `POST /webhooks/chatwoot` aceita assinatura HMAC oficial do Chatwoot.
 - Eventos reais foram persistidos em `raw.raw_events`.
 - O worker de normalizacao esta processando a fila para `core.*`.
+- `SKIP_EVENT_TYPES=message_updated` esta ativo para reduzir ruido no shadow mode.
+- O teste final com payload real do Chatwoot validou `core.contacts`,
+  `core.conversations` e `core.messages` vinculados corretamente.
 
 Ainda nao estamos em producao plena. Estamos em **shadow mode controlado**.
 
@@ -29,11 +32,10 @@ Concluido:
 
 Pendente antes de considerar Fase 1 fechada:
 
-- Controlar ruido de `message_updated` antes de religar webhook da inbox API.
-- Drenar/limpar a fila gerada durante o teste.
+- Rodar shadow mode por periodo combinado com o webhook ligado.
 - Validar replay real sem duplicar `core.*`.
 - Validar reconcile real em janela pequena.
-- Rodar shadow mode com eventos reais por periodo combinado.
+- Validar dois workers concorrentes contra Postgres real.
 
 ## Acesso e endpoints
 
@@ -82,6 +84,11 @@ https://github.com/financaswall-beep/FarejaorV1
 Ultimos commits relevantes:
 
 ```text
+0e10878 fix: link conversations to nested Chatwoot contacts
+f6ad7ff fix: upsert contacts from nested Chatwoot payloads
+186f891 fix: map nested Chatwoot sender metadata
+96da157 fix: map nested Chatwoot message fields
+67efb1d fix: skip noisy Chatwoot events in shadow mode
 c83b398 fix: validate official Chatwoot webhook signature
 f110ed0 fix: install build dependencies in Docker builder
 935f323 chore: add Coolify deploy config
@@ -107,6 +114,7 @@ CHATWOOT_API_BASE_URL=http://76.13.164.152/api/v1
 CHATWOOT_API_TOKEN=<token de acesso Chatwoot>
 CHATWOOT_ACCOUNT_ID=1
 ADMIN_AUTH_TOKEN=<token admin Farejador>
+SKIP_EVENT_TYPES=message_updated
 ```
 
 Observacao: usar Connection Pooler do Supabase. A URL direta
@@ -135,6 +143,13 @@ http://76.13.164.152:3000/webhooks/chatwoot
    o Farejador validava `raw_body`, mas o Chatwoot assina `timestamp.raw_body`.
 9. Correcao aplicada no commit `c83b398`.
 10. Depois do redeploy, webhook real entrou em `raw.raw_events`.
+11. O payload real mostrou campos aninhados diferentes dos fixtures iniciais.
+12. Foram corrigidos os mappers/dispatcher para:
+    - ler `conversation.id` quando `conversation_id` nao vem direto;
+    - ler `sender.type` e metadata aninhada;
+    - criar/upsertar contato a partir de `payload.meta.sender`;
+    - vincular conversa ao contato aninhado.
+13. O ruido de `message_updated` foi controlado por `SKIP_EVENT_TYPES=message_updated`.
 
 Mensagem real enviada para teste:
 
@@ -149,6 +164,39 @@ event_type: message_created
 payload_id: 4
 processing_status: pending
 ```
+
+## Teste final validado
+
+Apos as correcoes de payload aninhado e o redeploy final, foi feito um teste controlado
+com criacao de contato, conversa e mensagem pela API publica do Chatwoot.
+
+Resultado observado no Supabase:
+
+```text
+raw.raw_events:
+- processed: 2
+- conversation_created: processed
+- message_created: processed
+
+core.contacts:
+- chatwoot_contact_id: 7
+- contato criado corretamente
+
+core.conversations:
+- chatwoot_conversation_id: 7
+- has_contact: true
+- linked_contact_id: 7
+- current_status: open
+
+core.messages:
+- chatwoot_message_id: 15
+- chatwoot_conversation_id: 7
+- sender_type: contact
+- sender_id: 7
+```
+
+Conclusao: o fluxo real Chatwoot -> Farejador -> Supabase esta funcionando para
+contato, conversa e mensagem, com vinculo entre as tabelas normalizadas.
 
 ## Problema encontrado: enxurrada de message_updated
 
@@ -177,39 +225,45 @@ Conclusao:
 - A enxurrada parou quando a URL do webhook foi removida da inbox.
 - O worker esta drenando a fila.
 - O problema nao e conexao; e volume/ruido operacional de `message_updated`.
+- A mitigacao foi implementada e ativada com `SKIP_EVENT_TYPES=message_updated`.
 
 ## Estado atual do webhook no Chatwoot
 
-A URL do webhook da inbox API foi removida temporariamente para parar a fila.
-
-Nao religar ainda:
+Webhook da inbox API:
 
 ```text
 http://76.13.164.152:3000/webhooks/chatwoot
 ```
 
-Religar somente depois de implementar protecao contra `message_updated` ruidoso.
+Status: ligado para shadow mode controlado.
+
+Protecao ativa no Farejador:
+
+```text
+SKIP_EVENT_TYPES=message_updated
+```
+
+Com isso, `message_updated` continua sendo gravado em `raw.raw_events`, mas o worker
+marca como `skipped` e nao tenta normalizar esse evento ruidoso.
 
 ## Recomendacao para o proximo passo
 
-Filtro implementado no codigo (Opcao 1 - ignorar via configuracao):
+Filtro implementado no codigo:
 
 - Nova env var `SKIP_EVENT_TYPES` (lista CSV).
 - Dispatcher (`src/normalization/dispatcher.ts`) verifica antes do switch e lanca `SkipEventError`.
 - Worker ja trata `SkipEventError` marcando `processing_status='skipped'`.
 - `raw.raw_events` continua sendo gravado; nada se perde da auditoria.
 
-Para religar o webhook com seguranca:
+Proximos passos operacionais:
 
-1. No Coolify, definir `SKIP_EVENT_TYPES=message_updated` no servico Farejador e redeploy.
-2. Conferir `/healthz` ok.
-3. Drenar fila atual: rodar o worker ate `pending=0` (eventos antigos viram `skipped`).
-4. Reativar URL do webhook na inbox API do Chatwoot.
-5. Enviar uma unica mensagem nova e confirmar:
-   - `raw.raw_events` recebe `message_created` e (eventuais) `message_updated`.
-   - `core.messages` recebe a mensagem (vinda do `message_created`).
-   - `message_updated` aparece como `processing_status='skipped'`.
-6. Quando o projeto sair do shadow mode, decidir entre:
+1. Manter o webhook ligado por um periodo curto e monitorado.
+2. Acompanhar `raw.raw_events` por `pending`, `failed` e `skipped`.
+3. Rodar `/admin/replay/:raw_event_id` em um evento real e confirmar que nao duplica `core.*`.
+4. Rodar `/admin/reconcile` em janela pequena e confirmar inserts idempotentes em `raw.*`.
+5. Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
+6. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
+7. Quando o projeto sair do shadow mode, decidir entre:
    - manter skip de `message_updated`;
    - ou trocar por dedup semantica por `(environment, message_id, content hash)`.
 
@@ -227,41 +281,38 @@ Leia tambem:
 Tarefa proposta:
 
 ```text
-Investigar e propor uma correcao simples para o ruido de `message_updated` durante
-shadow mode. Nao implementar sem aprovacao.
+Auditar o shadow mode atual do Farejador e preparar checklist operacional para
+fechar a Fase 1. Nao implementar sem aprovacao.
 
 Escopo:
-- Ler `src/webhooks/**`, `src/normalization/**`, `src/persistence/raw-events.repository.ts`.
-- Confirmar onde e melhor filtrar/deduplicar `message_updated`.
+- Ler `docs/CHATWOOT_SHADOW_MODE_REPORT.md`, `docs/HANDOFF.md`,
+  `docs/CHECKLIST.md` e `docs/phases/PHASE_01.md`.
+- Confirmar quais validacoes reais ainda faltam: replay, reconcile, concorrencia
+  de worker e periodo de shadow mode.
 - Nao alterar migrations.
 - Nao alterar contratos em `src/shared/types/chatwoot.ts`.
 - Nao adicionar dependencias.
 - Nao tocar em secrets.
 
 Entrega:
-- Relatorio curto com 2 ou 3 opcoes.
-- Riscos de cada opcao.
-- Recomendacao final.
+- Relatorio curto do que falta para fechar Fase 1.
+- Riscos operacionais.
+- Ordem recomendada de validacao.
 ```
 
 ## Pedido para Opus
 
-Auditar a estrategia antes de implementar:
+Auditar o estado antes de declarar Fase 1 fechada:
 
 ```text
 Contexto: Farejador ja recebe webhooks reais do Chatwoot. O HMAC oficial foi corrigido
-para `timestamp.raw_body`. Ao religar a inbox API, o Chatwoot reenviou centenas de
-`message_updated` repetidos, gerando fila pending alta. A URL do webhook foi removida
-temporariamente da inbox.
+para `timestamp.raw_body`. `SKIP_EVENT_TYPES=message_updated` esta ativo. O teste
+final validou contato, conversa e mensagem normalizados e vinculados em core.*.
 
-Pergunta: qual e a menor correcao segura para shadow mode?
+Pergunta: quais validacoes operacionais faltam antes de fechar Fase 1 e abrir Fase 2a?
 
-Opcoes em avaliacao:
-1. Ignorar `message_updated` temporariamente por configuracao.
-2. Deduplicar semanticamente `message_updated`.
-3. Manter tudo e aumentar throughput do worker.
-
-Favor avaliar risco, impacto em dados e recomendacao.
+Favor avaliar replay real, reconcile real, dois workers concorrentes, periodo de
+shadow mode e rotacao de secrets.
 ```
 
 ## Riscos atuais
@@ -269,12 +320,14 @@ Favor avaliar risco, impacto em dados e recomendacao.
 - Secrets foram manipulados durante configuracao manual. Antes de producao plena,
   rotacionar `CHATWOOT_API_TOKEN`, `CHATWOOT_HMAC_SECRET`, `ADMIN_AUTH_TOKEN` e senha
   do banco se necessario.
-- A fila de teste contem muitos eventos `message_updated` redundantes.
+- `message_updated` esta filtrado no worker, mas ainda deve ser monitorado em volume.
 - A inbox API pode nao permitir selecao granular de eventos no painel.
 - Ainda falta teste real de replay e reconcile.
+- Ainda falta teste real com dois workers concorrentes.
 
 ## Veredito
 
-O projeto avancou para shadow mode real. A conexao Chatwoot -> Farejador -> Supabase
-esta comprovada. O proximo trabalho nao e conectar; e controlar volume/ruido antes de
-religar o webhook da inbox.
+O projeto esta no fim da Fase 1, em shadow mode real e controlado. A conexao
+Chatwoot -> Farejador -> Supabase esta comprovada, incluindo normalizacao de contato,
+conversa e mensagem. O proximo trabalho nao e conectar; e validar operacao real
+por um periodo curto, testar replay/reconcile reais e entao abrir a Fase 2a.

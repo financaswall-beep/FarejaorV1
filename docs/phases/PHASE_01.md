@@ -6,6 +6,7 @@
 - F1-01 webhook ingestion: concluida, validada contra Supabase e publicada.
 - F1-02 normalizacao: concluida, auditada, corrigida e publicada.
 - F1-03 admin endpoints: concluida, auditada, corrigida e publicada.
+- Shadow mode real: em andamento, com conexao Chatwoot -> Farejador -> Supabase validada.
 
 ## Objetivo
 
@@ -55,15 +56,35 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
 - Cliente Chatwoot usa `fetch` nativo, timeout de 10s e retry em 429/5xx.
 - Reconcile injeta somente raw_events sinteticos e usa `raw.delivery_seen` para dedup.
 - Reconcile explicita resultado parcial com `aborted`/`abort_reason` quando a paginacao falha.
-- Validacao local: 97 testes, typecheck e build verdes.
+- Validacao local apos hardening: 106 testes, typecheck e build verdes.
+
+## Shadow mode real - resumo atual
+
+- Farejador publicado no Coolify.
+- Supabase acessado pelo Connection Pooler com SSL.
+- `/healthz` responde `ok` em `prod`.
+- Webhook real do Chatwoot validado com assinatura oficial `timestamp.raw_body`.
+- `SKIP_EVENT_TYPES=message_updated` ativo para reduzir ruido operacional.
+- Payload real aninhado do Chatwoot tratado nos mappers/dispatcher.
+- Teste final validou:
+  - `raw.raw_events` com `conversation_created` e `message_created` processados;
+  - `core.contacts` populada;
+  - `core.conversations` vinculada ao contato;
+  - `core.messages` vinculada a conversa e ao sender.
 
 ## Criterios restantes para concluir a Fase 1
 
-1. Teste manual/integracao com Chatwoot real para `/admin/reconcile`.
-2. Validacao real em Supabase cobrindo replay, mensagem fora de ordem, attachment, status change e dedup.
-3. Shadow mode com webhooks reais por periodo combinado.
+1. Teste real de `/admin/replay/:raw_event_id` confirmando que nao duplica `core.*`.
+2. Teste real de `/admin/reconcile` em janela pequena contra Chatwoot.
+3. Teste/integracao com dois workers concorrentes usando Postgres real.
+4. Shadow mode com webhooks reais por periodo combinado.
+5. Rotacao de secrets antes de producao plena.
 
 ## Fim da Fase 1
 
-A Fase 1 termina quando F1-03 estiver implementada e um periodo de shadow mode com
-webhooks reais nao mostrar perdas ou duplicacoes relevantes.
+A Fase 1 esta tecnicamente entregue e em validacao operacional final. Ela deve ser
+considerada fechada quando replay/reconcile reais forem testados e um periodo curto
+de shadow mode nao mostrar perdas, duplicacoes ou fila travada.
+
+Depois disso, a proxima fase e a **Fase 2a - enrichment deterministico**, escrevendo
+somente em `analytics.*`, ainda sem LLM.

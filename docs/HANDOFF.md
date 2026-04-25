@@ -1,6 +1,6 @@
 # Handoff - Projeto Farejador
 
-Atualizado: 24/04/2026
+Atualizado: 25/04/2026
 
 ## Resumo
 
@@ -35,11 +35,13 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | F1-01 webhook ingestion | Concluido e validado contra Supabase |
 | F1-02 normalizacao | Concluido, auditado e corrigido |
 | F1-03 admin endpoints | Concluido, auditado, corrigido e publicado |
+| Shadow mode Chatwoot real | Em andamento, conexao e normalizacao final validadas |
 
 ## F1-01 - entregue
 
 - `POST /webhooks/chatwoot`.
-- HMAC timing-safe via `X-Chatwoot-Signature`.
+- HMAC timing-safe via `X-Chatwoot-Signature` usando o formato oficial
+  `timestamp.raw_body`.
 - Janela de timestamp.
 - Dedup por `X-Chatwoot-Delivery`.
 - Insert em `raw.delivery_seen` + `raw.raw_events`.
@@ -76,7 +78,8 @@ Regras criticas:
 - Replay so muda campos operacionais: `processing_status`, `processing_error`, `processed_at`.
 - Reconcile injeta em raw, nunca escreve direto em core.
 - Reconcile retorna resultado parcial com `aborted` e `abort_reason` em falha de paginacao.
-- Validacao local final: `npm test` 97/97, `npm run typecheck`, `npm run build`.
+- Validacao local final apos hardening: `npm test` 106/106, `npm run typecheck`,
+  `npm run build`.
 
 ## Proxima etapa operacional
 
@@ -86,7 +89,7 @@ Antes de abrir Fase 2, validar a Fase 1 com dados reais controlados:
 - Rodar `/admin/replay/:raw_event_id` contra Supabase real e confirmar que nao duplica `core.*`.
 - Rodar `/admin/reconcile` com janela pequena contra Chatwoot real e confirmar inserts em `raw.*`.
 - Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
-- Iniciar shadow mode com webhooks reais por periodo combinado.
+- Manter shadow mode com webhooks reais por periodo combinado.
 
 Status do shadow mode:
 
@@ -94,9 +97,14 @@ Status do shadow mode:
 - Chatwoot acessivel em `http://76.13.164.152/app/accounts/1/dashboard`.
 - `/healthz` responde `ok`.
 - Webhook real funcionou apos ajuste de HMAC oficial.
-- URL do webhook da inbox API foi removida temporariamente por ruido de `message_updated`.
-- Filtro implementado no dispatcher: definir `SKIP_EVENT_TYPES=message_updated` no Coolify para o Farejador marcar esse tipo como `skipped` (raw continua gravado).
-- Proximo passo operacional: drenar fila atual, religar webhook com `SKIP_EVENT_TYPES` ativo e validar shadow mode com `message_created`.
+- Webhook da inbox API esta ligado para shadow mode.
+- Filtro implementado no dispatcher e ativo no Coolify: `SKIP_EVENT_TYPES=message_updated`.
+- Teste real final validou contato, conversa e mensagem:
+  - `raw.raw_events`: `conversation_created` e `message_created` processados.
+  - `core.contacts`: contato real criado.
+  - `core.conversations`: conversa real vinculada ao contato.
+  - `core.messages`: mensagem real vinculada a conversa e ao sender.
+- Proximo passo operacional: monitorar shadow mode, testar replay real, testar reconcile real e validar concorrencia de worker.
 
 ## Fluxo recomendado para Kimi
 
@@ -132,3 +140,5 @@ Ao final entregue arquivos alterados, checklist, validacao, pendencias e riscos.
 - Secrets nunca devem ser impressos em log.
 - O repo remoto ja recebeu F1-01, F1-02 e F1-03.
 - Preferir patches pequenos e auditaveis.
+- Rotacionar secrets antes de producao plena, pois credenciais foram manipuladas
+  manualmente durante os testes de conexao.

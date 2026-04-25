@@ -1,6 +1,6 @@
 # Checklist Master - Farejador
 
-Atualizado: 24/04/2026
+Atualizado: 25/04/2026
 
 Legenda: feito, em andamento, proximo, futuro.
 
@@ -15,6 +15,9 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Conexao Supabase validada.
 - [x] Migrations aplicadas no Supabase usado na validacao.
 - [x] GitHub remoto atualizado ate F1-03.
+- [x] Deploy Coolify do Farejador validado.
+- [x] Supabase Connection Pooler validado no Coolify.
+- [x] Chatwoot real conectado ao Farejador em shadow mode.
 
 ## 2. Schema do banco
 
@@ -57,6 +60,7 @@ Legenda: feito, em andamento, proximo, futuro.
 
 - [x] `POST /webhooks/chatwoot`.
 - [x] HMAC timing-safe.
+- [x] HMAC oficial do Chatwoot validado com `timestamp.raw_body`.
 - [x] Timestamp expirado rejeitado.
 - [x] Dedup via `raw.delivery_seen`.
 - [x] Insert em `raw.raw_events`.
@@ -93,10 +97,10 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Reconcile injeta raw_events sinteticos com delivery_id deterministico.
 - [x] Reconcile retorna resultado parcial quando a paginacao falha.
 - [x] Testes unitarios de auth, health, replay, cliente Chatwoot, reconcile service e route.
-- [x] `npm test` 97/97.
+- [x] `npm test` 106/106.
 - [x] `npm run typecheck` verde.
 - [x] `npm run build` verde.
-- [ ] Teste manual/integracao com Chatwoot real e Supabase real.
+- [x] Teste manual com Chatwoot real e Supabase real para webhook, contato, conversa e mensagem.
 
 ## 5. Criterios restantes para fechar Fase 1
 
@@ -105,9 +109,14 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Farejador publicado no Coolify e conectado ao Supabase.
 - [x] Webhook real Chatwoot -> Farejador confirmado em `raw.raw_events`.
 - [x] Definir protecao contra ruido de `message_updated` antes de religar webhook da inbox API. Implementado via `SKIP_EVENT_TYPES` (CSV) com filtro no dispatcher; raw permanece gravado e o evento e marcado como `skipped`.
+- [x] Webhook da inbox API religado com `SKIP_EVENT_TYPES=message_updated`.
+- [x] Payload real aninhado do Chatwoot tratado nos mappers/dispatcher.
+- [x] Teste final validou `core.contacts`, `core.conversations` e `core.messages` vinculados.
 - [ ] Replay real nao duplica status events, assignments, messages ou attachments.
+- [ ] Reconcile real em janela pequena injeta `raw_events` sem duplicar.
 - [ ] Dois workers nao pegam o mesmo raw_event em teste/integracao com Postgres.
 - [ ] Shadow mode com webhooks reais por periodo combinado.
+- [ ] Rotacionar secrets antes de producao plena.
 
 ## 6. Futuro
 
