@@ -273,7 +273,7 @@ loss_reason: null
 
 ## Proxima fase relacionada
 
-Quando a Fase 1 for fechada, estes cenarios viram base para a **Fase 2a -
+Com a Fase 1 tecnica fechada, estes cenarios viram base para a **Fase 2a -
 enrichment deterministico**, onde regras simples podem detectar sinais como:
 
 - medida do pneu;

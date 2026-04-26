@@ -16,9 +16,17 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 ## Status atual
 
 - F1-01 webhook ingestion: concluida e validada contra Supabase.
-- F1-02 normalizacao deterministica: concluida, auditada e validada com 60 testes.
-- F1-03 admin endpoints: concluida, auditada e validada com 97 testes.
-- Fase 1 agora esta em validacao operacional: teste real de replay/reconcile, concorrencia no Supabase e shadow mode com webhooks reais.
+- F1-02 normalizacao deterministica: concluida, auditada, corrigida e validada em teste local e Supabase real.
+- F1-03 admin endpoints: concluida, auditada, corrigida e validada com Chatwoot/Supabase reais.
+- F1.5 hardening pre-producao plena: aplicado e publicado.
+- Fase 1 tecnica: concluida. Estado atual: shadow mode controlado antes de producao plena.
+
+Validacao atual:
+
+- `npm test`: 112/112.
+- `npm run typecheck`: verde.
+- `npm run build`: verde.
+- Webhook real, replay real, reconcile real e dois workers concorrentes ja foram validados.
 
 ## Invariantes
 
@@ -44,8 +52,25 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 - `/healthz` nao exige auth e valida DB com timeout.
 - `/admin/replay/:raw_event_id` exige bearer e altera somente campos operacionais.
 - `/admin/reconcile` exige bearer, limita janela a 7 dias e injeta somente raw_events sinteticos.
-- Reconcile usa delivery_id deterministico `reconcile:*` para idempotencia via `raw.delivery_seen`.
+- Reconcile usa delivery_id deterministico `reconcile-v2:tipo:env:account_id:id:ts` para idempotencia via `raw.delivery_seen` sem colisao entre contas.
 - Reconcile retorna resultado parcial com `aborted` e `abort_reason` quando a paginacao de conversas falha.
+
+## Decisoes recentes da F1.5
+
+- `raw.raw_events` agora tem trigger de imutabilidade no banco: apenas `processing_status`, `processing_error` e `processed_at` podem mudar.
+- `core.conversation_status_events` e `core.conversation_assignments` tem UNIQUE constraints para idempotencia atomica.
+- Repositories auxiliares usam `ON CONFLICT ON CONSTRAINT ... DO NOTHING`, entao conflito concorrente vira no-op e nao `failed`.
+- `core.contacts.first_seen_at` nao e sobrescrito em updates.
+- SSL aceita `DATABASE_CA_CERT` para validacao de certificado; sem CA em prod gera aviso e deve ser corrigido antes de producao plena.
+- `ops.orphan_conversation_stubs` e `ops.report_orphan_stubs()` monitoram stubs de conversa.
+
+## Ressalvas antes de producao plena
+
+- Manter shadow mode por periodo combinado e monitorar `pending`, `failed`, `skipped`, stubs orfaos e latencia da fila.
+- Rotacionar secrets manipulados durante configuracao: token Chatwoot, segredo HMAC, token admin e credenciais do banco se necessario.
+- Configurar `DATABASE_CA_CERT` no Coolify.
+- Adicionar harness de integracao automatizado com Postgres real antes de aumentar o escopo da Fase 2a.
+- Migrar mappers criticos para Zod permissivo e limpar o caminho legado de body dos testes.
 
 ## Stack
 

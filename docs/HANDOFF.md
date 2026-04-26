@@ -35,7 +35,9 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | F1-01 webhook ingestion | Concluido e validado contra Supabase |
 | F1-02 normalizacao | Concluido, auditado e corrigido |
 | F1-03 admin endpoints | Concluido, auditado, corrigido e publicado |
-| Shadow mode Chatwoot real | Em andamento, conexao e normalizacao final validadas |
+| F1.5 hardening | Concluido, publicado e documentado |
+| Fase 1 tecnica | Concluida |
+| Shadow mode Chatwoot real | Em andamento como ressalva operacional antes de producao plena |
 
 ## F1-01 - entregue
 
@@ -83,13 +85,22 @@ Regras criticas:
 
 ## Proxima etapa operacional
 
-Antes de abrir Fase 2, validar a Fase 1 com dados reais controlados:
+A Fase 2a pode ser iniciada. Em paralelo, manter as ressalvas operacionais da Fase 1
+antes de declarar producao plena.
 
-- Ler `docs/CHATWOOT_SHADOW_MODE_REPORT.md`.
-- Rodar `/admin/replay/:raw_event_id` contra Supabase real e confirmar que nao duplica `core.*`.
-- Rodar `/admin/reconcile` com janela pequena contra Chatwoot real e confirmar inserts em `raw.*`.
-- Validar dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
+Ja validado com dados reais:
+
+- `POST /webhooks/chatwoot` contra Chatwoot/Supabase reais.
+- `/admin/replay/:raw_event_id` sem duplicar `core.*`.
+- `/admin/reconcile` com janela pequena contra Chatwoot real.
+- Dois workers concorrentes com `FOR UPDATE SKIP LOCKED`.
+
+Ainda pendente antes de producao plena:
+
 - Manter shadow mode com webhooks reais por periodo combinado.
+- Rotacionar secrets.
+- Configurar `DATABASE_CA_CERT`.
+- Criar harness de integracao automatizado com Postgres real.
 
 Status do shadow mode:
 
@@ -113,7 +124,7 @@ Status do shadow mode:
   - raw_event `111` reprocessado via `/admin/replay/111`.
   - `core.messages` da conversa 8 permaneceu sem duplicacao.
 - Reconcile real validado em janela pequena:
-  - primeira execucao inseriu eventos `reconcile:*`.
+  - primeira execucao inseriu eventos sinteticos de reconcile.
   - segunda execucao retornou `inserted=0`, `skipped_duplicate=12`, `errors=[]`.
   - bug de duplicacao por precisao de timestamp foi corrigido antes do fechamento.
 - Concorrencia de worker validada contra Supabase real com `environment=test`:
@@ -121,11 +132,11 @@ Status do shadow mode:
   - 2 workers executados em paralelo.
   - 80/80 `processed`.
   - 0 duplicatas em `core.messages`.
-- Proximo passo operacional: monitorar shadow mode por periodo combinado e rotacionar secrets.
+- Proximo passo operacional: iniciar Fase 2a sem LLM em paralelo ao shadow mode, monitorar operacao e rotacionar secrets antes de producao plena.
 
 ## F1.5 - Hardening aplicado em 2026-04-25
 
-Auditoria tecnica completa + hardening deployado antes de abrir Fase 2a.
+Auditoria tecnica completa + hardening deployado antes de producao plena.
 
 ### Migrations aplicadas no Supabase (nao requerem redeploy futuro):
 
@@ -149,11 +160,12 @@ Auditoria tecnica completa + hardening deployado antes de abrir Fase 2a.
 - `core.messages`: 118 linhas (prod).
 - Stubs orfaos: 80 em environment=test, IDs Chatwoot 1200200-1200279, do teste de concorrencia de 25/04.
 
-### Pendente da F1.5 (antes de Fase 2a):
+### Pendente da F1.5 (antes de producao plena):
 
 1. Harness de integracao com Postgres real — testes automatizados que rodam SQL real.
 2. Zod permissivo nos mappers criticos — schemas com `.passthrough()` nos mappers de contact, conversation e message.
 3. Limpar body legado do handler e migrar testes para caminho real de producao.
+4. Configurar `DATABASE_CA_CERT` no Coolify.
 
 ## Fluxo recomendado para Kimi
 
@@ -187,7 +199,7 @@ Ao final entregue arquivos alterados, checklist, validacao, pendencias e riscos.
 
 - `.env.codex` existe localmente e nao deve ser commitado.
 - Secrets nunca devem ser impressos em log.
-- O repo remoto ja recebeu F1-01, F1-02 e F1-03.
+- O repo remoto ja recebeu F1-01, F1-02, F1-03 e F1.5.
 - Preferir patches pequenos e auditaveis.
 - Rotacionar secrets antes de producao plena, pois credenciais foram manipuladas
   manualmente durante os testes de conexao.

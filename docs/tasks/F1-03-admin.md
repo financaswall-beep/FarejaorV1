@@ -11,7 +11,7 @@ Validacao local final:
 
 ```text
 npm run typecheck  -> verde
-npm test           -> 97 testes passando
+npm test           -> 112 testes passando na suite completa atual
 npm run build      -> verde
 ```
 
@@ -69,7 +69,7 @@ Nao inclui:
 5. Replay marca o raw_event como `pending`, limpa `processing_error` e `processed_at`.
 6. Replay nao altera `payload`, `chatwoot_delivery_id`, `received_at` ou qualquer campo imutavel.
 7. Reconcile injeta somente em `raw.raw_events`/`raw.delivery_seen`; normalizacao continua com o worker da F1-02.
-8. Delivery sintetico de reconcile deve ter prefixo estavel `reconcile:`.
+8. Delivery sintetico de reconcile deve ter prefixo estavel `reconcile-v2:` e incluir `account_id`.
 9. Logs de admin devem incluir `actor='admin'`, request id quando disponivel e resultado.
 10. Nao logar secrets, token admin, HMAC secret, payload bruto ou PII desnecessaria.
 
@@ -95,7 +95,7 @@ Nao inclui:
 - [x] Reconcile limita janela a 7 dias.
 - [x] Reconcile pagina Chatwoot API.
 - [x] Reconcile injeta via bouncer de dedup.
-- [x] Reconcile usa delivery_id deterministico `reconcile:*`.
+- [x] Reconcile usa delivery_id deterministico `reconcile-v2:tipo:env:account_id:id:ts`.
 - [x] Reconcile responde contagens `{ inserted, skipped_duplicate, errors, pages_fetched, aborted, abort_reason }`.
 - [x] Reconcile retorna resultado parcial quando a paginacao de conversas falha.
 - [x] Falha ao paginar mensagens de uma conversa vira erro daquela conversa e nao aborta as demais.
@@ -110,7 +110,7 @@ Nao inclui:
 - Falhas durante a paginacao de conversas retornam resultado parcial com `aborted=true`.
 - Falhas durante a paginacao de mensagens ficam registradas em `errors` e o reconcile continua nas demais conversas.
 - Reconcile nao escreve direto em `core.*`; ele injeta em `raw.*` e deixa o worker F1-02 normalizar.
-- Teste manual com Chatwoot real fica pendente ate haver credenciais reais configuradas no ambiente.
+- Teste manual com Chatwoot real foi executado no shadow mode: webhook, replay e reconcile foram validados contra Chatwoot/Supabase reais. O que ainda falta e automatizar parte disso em harness de integracao.
 
 ## Criterios de aceite
 
@@ -121,7 +121,7 @@ Nao inclui:
 5. Replay de raw_event ja processado nao cria duplicatas em `core.*`.
 6. `POST /admin/reconcile` com janela pequena injeta raw_events sinteticos.
 7. Rodar a mesma janela de reconcile duas vezes nao duplica por causa de `raw.delivery_seen`.
-8. `raw.raw_events.chatwoot_delivery_id` de reconcile usa prefixo `reconcile:`.
+8. `raw.raw_events.chatwoot_delivery_id` de reconcile usa prefixo `reconcile-v2:` e inclui `account_id`.
 9. Nenhuma rota admin escreve diretamente em `core.*` ou `analytics.*`.
 
 ## Formato obrigatorio de resposta

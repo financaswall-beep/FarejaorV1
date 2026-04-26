@@ -18,9 +18,9 @@ ser reaproveitado em outros segmentos, como:
 
 Nao bifurcar agora.
 
-O melhor ponto para bifurcar e depois de:
+O melhor ponto para bifurcar continua sendo depois de:
 
-1. Fase 1 fechada operacionalmente.
+1. Fase 1 tecnica concluida e ressalvas de producao plena controladas.
 2. Esqueleto generico da Fase 2a criado.
 3. Regras especificas de pneus isoladas em pacote/configuracao de segmento.
 
@@ -34,12 +34,14 @@ farejador-base-v1
 
 ### Obrigatorio
 
-- [ ] Fase 1 fechada operacionalmente.
-- [ ] Replay real testado sem duplicar `core.*`.
-- [ ] Reconcile real testado em janela pequena.
-- [ ] Dois workers concorrentes validados com Postgres real.
+- [x] Fase 1 tecnica concluida.
+- [x] Replay real testado sem duplicar `core.*`.
+- [x] Reconcile real testado em janela pequena.
+- [x] Dois workers concorrentes validados com Postgres real.
 - [ ] Shadow mode real rodado por periodo combinado sem fila travada.
 - [ ] Secrets rotacionados antes de producao plena.
+- [ ] `DATABASE_CA_CERT` configurado no Coolify.
+- [ ] Harness de integracao automatizado com Postgres real.
 - [ ] Documentacao de deploy atualizada.
 - [ ] Checklist e handoff atualizados.
 
@@ -169,6 +171,8 @@ Replay real sem duplicacao
 Reconcile real em janela pequena
 Worker concorrente com Postgres real
 Shadow mode sem fila travada
+Secrets rotacionados
+DATABASE_CA_CERT configurado
 ```
 
 Comando sugerido:
@@ -184,8 +188,8 @@ Quando o usuario perguntar se ja pode bifurcar, responder:
 
 ```text
 Ainda nao, se algum item obrigatorio deste documento estiver pendente.
-Sim, se Fase 1 estiver fechada operacionalmente e a Fase 2a generica estiver criada
-sem regras de segmento hardcoded no nucleo.
+Sim, se a Fase 1 tecnica estiver concluida, as ressalvas de producao plena estiverem
+controladas e a Fase 2a generica estiver criada sem regras de segmento hardcoded no nucleo.
 ```
 
 ## Proxima decisao

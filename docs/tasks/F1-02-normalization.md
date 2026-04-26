@@ -54,7 +54,7 @@ via upsert idempotente com watermark de ordem.
 
 - Reprocessamento administrativo via endpoint foi entregue em F1-03.
 - Reconcile via API Chatwoot foi entregue em F1-03.
-- Teste de integracao real com Supabase para replay, idempotencia e `SKIP LOCKED` concorrente continua como validacao operacional antes do fim da Fase 1.
+- Teste real com Supabase para replay, idempotencia e `SKIP LOCKED` concorrente foi executado durante o fechamento da Fase 1/F1.5. O que ainda falta e transformar essa validacao em harness automatizado de integracao.
 - Implementacao real de reactions, caso o Chatwoot passe a enviar payloads relevantes.
 
 ## Arquivos principais

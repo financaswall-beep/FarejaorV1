@@ -105,7 +105,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] `npm run build` verde.
 - [x] Teste manual com Chatwoot real e Supabase real para webhook, contato, conversa e mensagem.
 
-## 5. Criterios restantes para fechar Fase 1
+## 5. Fechamento da Fase 1 tecnica
 
 - [x] `/admin/replay/:id` reprocessa uma linha `failed` no contrato unitario.
 - [x] `/admin/reconcile` traz conversas faltantes sem duplicar no contrato unitario.
@@ -121,12 +121,17 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Reconcile real em janela pequena injeta `raw_events` e e idempotente: primeira rodada inseriu reconcile events; segunda rodada retornou `inserted=0`, `skipped_duplicate=12`.
 - [x] Bug real de duplicacao por precisao de timestamp corrigido em `core.messages`; replay dos eventos reconcile nao recriou duplicatas.
 - [x] Dois workers concorrentes validados contra Supabase real em `environment=test`: 80 raw_events, 80 `processed`, 0 duplicatas em `core.messages`.
+- [x] Fase 1 tecnica concluida e apta a abrir Fase 2a.
+
+Ressalvas antes de producao plena:
+
 - [ ] Shadow mode com webhooks reais por periodo combinado.
 - [ ] Rotacionar secrets antes de producao plena.
+- [ ] Configurar `DATABASE_CA_CERT` no Coolify para SSL com validacao de certificado.
 
 ## 5.1 F1.5 - Hardening pre-producao plena (2026-04-25)
 
-Auditoria tecnica completa realizada antes de abrir Fase 2a. Itens aplicados e deployados:
+Auditoria tecnica completa realizada antes de producao plena. Itens aplicados e deployados:
 
 - [x] Trigger `raw.enforce_raw_event_immutability` em `raw.raw_events`: bloqueia UPDATE em payload/event_type/delivery_id e bloqueia DELETE. Whitelist: `processing_status`, `processing_error`, `processed_at`. Propagado para todas as particoes. Validado no Supabase real (rejeitou UPDATE em id=174).
 - [x] UNIQUE constraint `status_events_dedup_key` em `core.conversation_status_events (environment, chatwoot_conversation_id, event_type, occurred_at)`: fecha race condition de dedup concorrente.

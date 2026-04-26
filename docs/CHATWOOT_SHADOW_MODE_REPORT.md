@@ -15,11 +15,12 @@ do Chatwoot. A integracao basica esta funcionando:
 - O teste final com payload real do Chatwoot validou `core.contacts`,
   `core.conversations` e `core.messages` vinculados corretamente.
 
-Ainda nao estamos em producao plena. Estamos em **shadow mode controlado**.
+Fase 1 tecnica concluida. Ainda nao estamos em producao plena: estamos em
+**shadow mode controlado** para observacao operacional e rotacao de secrets.
 
 ## Onde estamos no projeto
 
-Fase atual: fim da Fase 1, validacao operacional real.
+Fase atual: Fase 1 tecnica concluida; F1.5 hardening publicado; shadow mode real em acompanhamento.
 
 Concluido:
 
@@ -30,10 +31,12 @@ Concluido:
 - Conexao com Supabase via Supabase Connection Pooler.
 - Teste real de webhook Chatwoot -> Farejador.
 
-Pendente antes de considerar Fase 1 fechada:
+Pendente antes de considerar producao plena:
 
 - Rodar shadow mode por periodo combinado com o webhook ligado.
 - Rotacionar secrets antes de producao plena.
+- Configurar `DATABASE_CA_CERT` no Coolify.
+- Criar harness de integracao automatizado com Postgres real.
 
 ## Acesso e endpoints
 
@@ -82,6 +85,11 @@ https://github.com/financaswall-beep/FarejaorV1
 Ultimos commits relevantes:
 
 ```text
+57c7b6f fix: make auxiliary event inserts conflict-safe
+3e27464 docs: record F1.5 hardening — checklist e handoff atualizados
+66b9537 fix: F1.5 hardening — imutabilidade raw, constraints idempotência, reconcile-v2, SSL, first_seen_at
+e8007be docs: record worker concurrency validation
+48623d2 docs: record real replay and reconcile validation
 f1e29ca fix: dedupe messages across timestamp precision
 c0769f8 fix: support Chatwoot top-level payload pages
 3538252 fix: reconcile filters Chatwoot conversations locally
@@ -241,7 +249,7 @@ Correcao:
   de considerar `sent_at`.
 - Duplicatas geradas nas conversas de teste 7/8 foram removidas mantendo a linha
   com timestamp mais preciso.
-- Reprocessar os eventos `reconcile:*` depois da correcao nao recriou duplicatas.
+- Reprocessar os eventos sinteticos de reconcile depois da correcao nao recriou duplicatas.
 
 ## Concorrencia de worker
 
@@ -319,8 +327,10 @@ Proximos passos operacionais:
 
 1. Manter o webhook ligado por um periodo curto e monitorado.
 2. Acompanhar `raw.raw_events` por `pending`, `failed` e `skipped`.
-3. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
-4. Quando o projeto sair do shadow mode, decidir entre:
+3. Configurar `DATABASE_CA_CERT` no Coolify.
+4. Rotacionar secrets antes de producao plena, pois foram manipulados manualmente durante os testes.
+5. Criar harness de integracao automatizado com Postgres real.
+6. Quando o projeto sair do shadow mode, decidir entre:
    - manter skip de `message_updated`;
    - ou trocar por dedup semantica por `(environment, message_id, content hash)`.
 
@@ -339,36 +349,38 @@ Tarefa proposta:
 
 ```text
 Auditar o shadow mode atual do Farejador e preparar checklist operacional para
-fechar a Fase 1. Nao implementar sem aprovacao.
+producao plena. Nao implementar sem aprovacao.
 
 Escopo:
 - Ler `docs/CHATWOOT_SHADOW_MODE_REPORT.md`, `docs/HANDOFF.md`,
   `docs/CHECKLIST.md` e `docs/phases/PHASE_01.md`.
-- Confirmar quais validacoes reais ainda faltam: replay, reconcile, concorrencia
-  de worker e periodo de shadow mode.
+- Considerar que replay real, reconcile real e concorrencia de worker ja foram validados.
+- Confirmar apenas as ressalvas restantes: periodo de shadow mode, rotacao de
+  secrets, `DATABASE_CA_CERT`, harness de integracao real, Zod permissivo e limpeza
+  do caminho legado de body.
 - Nao alterar migrations.
 - Nao alterar contratos em `src/shared/types/chatwoot.ts`.
 - Nao adicionar dependencias.
 - Nao tocar em secrets.
 
 Entrega:
-- Relatorio curto do que falta para fechar Fase 1.
+- Relatorio curto do que falta para producao plena.
 - Riscos operacionais.
 - Ordem recomendada de validacao.
 ```
 
 ## Pedido para Opus
 
-Auditar o estado antes de declarar Fase 1 fechada:
+Auditar o estado antes de declarar producao plena:
 
 ```text
 Contexto: Farejador ja recebe webhooks reais do Chatwoot. O HMAC oficial foi corrigido
 para `timestamp.raw_body`. `SKIP_EVENT_TYPES=message_updated` esta ativo. O teste
 final validou contato, conversa e mensagem normalizados e vinculados em core.*.
 
-Pergunta: quais validacoes operacionais faltam antes de fechar Fase 1 e abrir Fase 2a?
+Pergunta: quais validacoes operacionais faltam antes de declarar producao plena?
 
-Favor avaliar periodo de shadow mode e rotacao de secrets.
+Favor avaliar periodo de shadow mode, rotacao de secrets, `DATABASE_CA_CERT` e harness de integracao real.
 ```
 
 ## Riscos atuais
@@ -379,10 +391,12 @@ Favor avaliar periodo de shadow mode e rotacao de secrets.
 - `message_updated` esta filtrado no worker, mas ainda deve ser monitorado em volume.
 - A inbox API pode nao permitir selecao granular de eventos no painel.
 - Ainda falta rotacao de secrets antes de producao plena.
+- Ainda falta configurar `DATABASE_CA_CERT` no Coolify.
 
 ## Veredito
 
-O projeto esta no fim da Fase 1, em shadow mode real e controlado. A conexao
-Chatwoot -> Farejador -> Supabase esta comprovada, incluindo normalizacao de contato,
-conversa e mensagem. O proximo trabalho nao e conectar; e validar operacao real
-por um periodo curto, testar replay/reconcile reais e entao abrir a Fase 2a.
+O projeto concluiu a Fase 1 tecnica e esta em shadow mode real e controlado. A
+conexao Chatwoot -> Farejador -> Supabase esta comprovada, incluindo normalizacao
+de contato, conversa e mensagem; replay, reconcile e concorrencia de worker tambem
+foram validados. A Fase 2a pode comecar sem LLM, em paralelo ao monitoramento
+operacional e as ressalvas de producao plena.

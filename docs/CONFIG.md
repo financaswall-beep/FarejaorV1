@@ -14,6 +14,7 @@ nunca `process.env.X` direto.
 | `DATABASE_URL` | sim | Connection string do Supabase Postgres (via pooler em prod). | `postgresql://postgres:...@...supabase.co:6543/postgres` |
 | `DATABASE_POOL_MAX` | não | Tamanho máximo do pool `pg`. Default `10`. | `10` |
 | `DATABASE_SSL` | não | Força SSL no pool `pg`. Default `false`; URLs Supabase ativam SSL automaticamente. | `true` |
+| `DATABASE_CA_CERT` | não | Certificado CA PEM para validar SSL do Supabase com `rejectUnauthorized:true`. Sem ele, prod sobe com aviso e SSL sem validação de certificado. Configurar antes de produção plena. | `<PEM com \n escapado>` |
 | `CHATWOOT_HMAC_SECRET` | sim | Segredo para validar `X-Chatwoot-Signature`. | `<secret>` |
 | `CHATWOOT_WEBHOOK_MAX_AGE_SECONDS` | não | Rejeita webhooks com `X-Chatwoot-Timestamp` mais antigo que isso. Default `300`. | `300` |
 | `CHATWOOT_API_BASE_URL` | sim (admin) | URL base da API do Chatwoot para reconcile. | `https://chatwoot.example.com/api/v1` |
@@ -29,6 +30,7 @@ nunca `process.env.X` direto.
 2. **Nunca** logue valor de env var sensível (`CHATWOOT_HMAC_SECRET`, `ADMIN_AUTH_TOKEN`, `DATABASE_URL`).
 3. Em Coolify, usar o gerenciador de secrets. Em dev local, arquivo `.env` no root.
 4. Adicionar env var nova = task explícita que atualiza `CONFIG.md` + `.env.example` + `src/shared/config/env.ts` no mesmo commit.
+5. Antes de produção plena, configurar `DATABASE_CA_CERT` no Coolify para validar o certificado do Supabase.
 
 ## Pontos de validação
 

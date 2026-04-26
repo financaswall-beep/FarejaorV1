@@ -6,7 +6,9 @@
 - F1-01 webhook ingestion: concluida, validada contra Supabase e publicada.
 - F1-02 normalizacao: concluida, auditada, corrigida e publicada.
 - F1-03 admin endpoints: concluida, auditada, corrigida e publicada.
-- Shadow mode real: em andamento, com conexao Chatwoot -> Farejador -> Supabase validada.
+- F1.5 hardening: aplicado, documentado e publicado.
+- Fase 1 tecnica: concluida.
+- Shadow mode real: em andamento como ressalva operacional antes de producao plena.
 
 ## Objetivo
 
@@ -80,16 +82,31 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
   - 80/80 `processed`;
   - 0 duplicatas em `core.messages`.
 
-## Criterios restantes para concluir a Fase 1
+## F1.5 - hardening pre-producao plena
+
+- Trigger de imutabilidade em `raw.raw_events`.
+- UNIQUE constraints atomicas em `core.conversation_status_events` e `core.conversation_assignments`.
+- Repositories auxiliares com `ON CONFLICT ON CONSTRAINT ... DO NOTHING`.
+- Reconcile v2 com `account_id` no delivery id.
+- `first_seen_at` preservado em updates.
+- `DATABASE_CA_CERT` suportado para SSL com validacao de certificado.
+- Monitor de stubs orfaos em `ops.orphan_conversation_stubs` e `ops.report_orphan_stubs()`.
+
+## Ressalvas restantes antes de producao plena
 
 1. Shadow mode com webhooks reais por periodo combinado.
 2. Rotacao de secrets antes de producao plena.
+3. Configurar `DATABASE_CA_CERT` no Coolify.
+4. Harness de integracao automatizado com Postgres real.
+5. Zod permissivo nos mappers criticos.
+6. Limpeza do caminho legado de body nos testes/handler.
 
 ## Fim da Fase 1
 
-A Fase 1 esta tecnicamente entregue e em validacao operacional final. Ela deve ser
-considerada fechada quando secrets forem rotacionados e um periodo curto de shadow
-mode nao mostrar perdas, duplicacoes ou fila travada.
+A Fase 1 esta tecnicamente concluida e liberada para iniciar a Fase 2a em paralelo
+ao shadow mode. Para chamar de producao plena, ainda e necessario rotacionar secrets,
+configurar `DATABASE_CA_CERT`, manter observacao operacional por periodo combinado e
+automatizar o harness de integracao real.
 
 Depois disso, a proxima fase e a **Fase 2a - enrichment deterministico**, escrevendo
 somente em `analytics.*`, ainda sem LLM.
