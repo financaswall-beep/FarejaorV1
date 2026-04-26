@@ -28,13 +28,26 @@ Metricas esperadas:
 - `started_hour_local`;
 - `started_dow_local`.
 
+Criar tambem um CLI minimo:
+
+```text
+npm run enrich -- --conversation-id=<uuid> --segment=generic
+```
+
+Nesta task, o argumento `--segment` pode ser aceito e ignorado com log claro, porque
+o motor de regras so entra na F2A-02. O CLI deve executar signals para a conversa
+informada.
+
 ## Arquivos que pode criar/alterar
 
 - `src/enrichment/signals.service.ts`
 - `src/enrichment/signals.repository.ts`
+- `src/enrichment/cli.ts`
 - `src/enrichment/index.ts` se necessario
 - `tests/unit/enrichment/signals.service.test.ts`
 - `tests/unit/enrichment/signals.repository.test.ts`
+- `tests/unit/enrichment/enrichment.cli.test.ts`
+- `package.json` apenas para adicionar script `enrich`
 - `docs/tasks/F2A-01-conversation-signals.md`
 
 Nao criar worker automatico nesta task.
@@ -60,6 +73,14 @@ confidence_level = 1.00
 extractor_version = f2a_signals_v1
 ```
 
+## Versionamento
+
+`analytics.conversation_signals` e snapshot atual por conversa. A tabela tem
+`conversation_id` como primary key, portanto usar upsert e sobrescrever os sinais
+estruturais atuais.
+
+Historico por versao nao entra nesta task.
+
 ## Idempotencia
 
 Rodar duas vezes deve atualizar a mesma linha de `analytics.conversation_signals`,
@@ -77,7 +98,9 @@ Criar testes unitarios cobrindo:
 - maior gap entre mensagens;
 - handoff_count vindo de assignments;
 - media_text_ratio quando ha anexos;
-- idempotencia do upsert no SQL.
+- idempotencia do upsert no SQL;
+- CLI aceita `--conversation-id` e chama o servico;
+- garantia textual de que o SQL nao contem INSERT/UPDATE em `raw.` ou `core.`.
 
 ## Validacao
 

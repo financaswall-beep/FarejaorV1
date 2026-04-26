@@ -97,9 +97,9 @@ Primeira entrega recomendada:
 
 Fronteira do fork:
 
-- Parar ao fim da F2A-02.
+- Parar ao fim da F2A-03.
 - Avisar Wallace antes de criar `segments/tires`.
-- Criar tag `farejador-base-v1` se aprovado.
+- Criar tag `farejador-base-v1` se aprovado e se checklist operacional estiver verde.
 
 Ja validado com dados reais:
 

@@ -78,8 +78,9 @@ Validacao atual:
 - F2a comeca por sinais estruturais genericos em `analytics.conversation_signals`.
 - O nucleo de enrichment fica em `src/enrichment/*`.
 - Regras de negocio ficam em `segments/*`.
+- A selecao de segmento usa `segments/routing.json` por `environment + chatwoot_account_id`.
 - O primeiro pacote de segmento de pneus so deve nascer depois da fronteira do fork.
-- A fronteira do fork acontece ao fim da F2A-02, quando o motor generico existir sem regras de pneus.
+- A fronteira do fork acontece ao fim da F2A-03, quando signals, regras e classificacoes genericas existirem sem regras de pneus.
 
 ## Stack
 

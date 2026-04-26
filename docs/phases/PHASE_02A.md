@@ -20,7 +20,7 @@ Exemplos:
 - quantidade de mensagens por conversa;
 - pistas textuais de urgencia, preco, abandono e concorrente;
 - fatos observados, como produto pedido, preco cotado e cidade mencionada;
-- classificacoes deterministicas basicas, como etapa alcancada e possivel motivo
+- classificacoes deterministicas genericas, como etapa alcancada e possivel motivo
   de perda.
 
 ## Invariantes
@@ -73,23 +73,57 @@ Implementar calculo deterministico de `analytics.conversation_signals`:
 - handoff count;
 - hora/dia local de inicio.
 
-Essa entrega cria o worker/servico generico de enrichment, mas apenas para sinais
-SQL/estruturais. E a melhor primeira tarefa para Kimi.
+Tambem criar um CLI minimo para validacao manual:
+
+```text
+npm run enrich -- --conversation-id=<uuid> --segment=generic
+```
+
+O CLI pode, nesta primeira entrega, executar apenas `conversation_signals`.
 
 ### F2A-02 - Motor generico de regras declarativas
 
-Criar estrutura para regras por segmento, sem escrever regras de pneu ainda.
+Criar estrutura para regras por segmento, sem escrever regras de pneu.
 
 Escopo:
 
-- `segments/generic/*` com exemplos neutros;
-- loader validado por Zod;
+- `segments/generic/*`;
+- `segments/_template/*`;
+- `segments/routing.json`;
+- loader validado por Zod com `locale`;
 - tipos de regra simples: keyword, regex, phrase_set;
 - saida padronizada para `linguistic_hints` e `conversation_facts`;
+- migration nova para idempotencia de `analytics.linguistic_hints`;
 - teste provando que trocar o segmento troca as regras sem tocar em `raw.*`,
   `core.*` ou no motor.
 
-### F2A-03 - FRONTEIRA DO FORK
+Estrutura minima de cada segmento:
+
+```text
+segments/<segment>/
+  rules.json
+  lexicon.json
+  scenarios.json
+  README.md
+```
+
+### F2A-03 - Classificacoes deterministicas genericas
+
+Gerar `analytics.conversation_classifications` a partir de sinais, fatos e hints
+genericos:
+
+- `stage_reached`;
+- `buyer_intent`;
+- `urgency`;
+- `final_outcome` quando houver evidencia deterministica;
+- `loss_reason` quando houver evidencia deterministica.
+
+Esta entrega ainda nao pode conter regra de pneu. As dimensoes acima servem para
+imobiliaria, material de construcao, autopecas, clinicas e outros segmentos.
+
+Se a regra nao tiver evidencia clara, nao inventar valor.
+
+### F2A-04 - FRONTEIRA DO FORK
 
 Parar aqui e avisar Wallace antes de continuar.
 
@@ -100,9 +134,11 @@ git tag farejador-base-v1
 git push origin farejador-base-v1
 ```
 
-So depois dessa tag devemos criar pacote de segmento de pneus.
+A tag so deve ser criada se o checklist tecnico e operacional estiver verde. Se a
+operacao ainda tiver pendencia, F2A-04 vira "codigo pronto para tag" e a tag fica
+aguardando operacao.
 
-### F2A-04 - Pacote de segmento pneus
+### F2A-05 - Pacote de segmento pneus
 
 Criar `segments/tires/*`.
 
@@ -115,38 +151,89 @@ Aqui sim entram termos de pneu:
 
 Nada disso deve ficar no nucleo.
 
-### F2A-05 - Classificacoes deterministicas basicas
+## Selecao de segmento
 
-Gerar `analytics.conversation_classifications` a partir de sinais e fatos:
+O motor deve escolher o ruleset por roteamento explicito:
 
-- `stage_reached`;
-- `buyer_intent`;
-- `urgency`;
-- `final_outcome` quando houver evidencia deterministica;
-- `loss_reason` quando houver evidencia deterministica.
+```text
+segments/routing.json
+```
 
-Se a regra nao tiver evidencia clara, nao inventar valor.
+Formato inicial:
+
+```json
+{
+  "defaultSegment": "generic",
+  "routes": [
+    {
+      "environment": "prod",
+      "chatwoot_account_id": 1,
+      "segment": "generic"
+    }
+  ]
+}
+```
+
+Regras:
+
+- roteamento por `environment + chatwoot_account_id`;
+- se nao encontrar rota, usar `defaultSegment`;
+- na F2A-05 trocar a rota da conta real para `tires`, depois da tag base;
+- nao decidir segmento por texto da conversa.
+
+## Termo generico vs termo de segmento
+
+Regra pratica:
+
+```text
+Se o termo faz sentido em pelo menos 3 verticais sem mudar o significado, pode ficar
+no generic. Caso contrario, fica no segmento.
+```
+
+Exemplos genericos:
+
+- preco;
+- entrega;
+- garantia;
+- instalacao;
+- agendamento;
+- urgencia;
+- concorrente.
+
+Exemplos de segmento:
+
+- `100/80-18`;
+- aro;
+- balanceamento de roda;
+- financiamento imobiliario;
+- cimento CP-II.
 
 ## Fronteira do fork
 
-Eu devo avisar o usuario quando F2A-02 terminar. Nesse ponto:
+Eu devo avisar o usuario quando F2A-03 terminar. Nesse ponto:
 
-- o nucleo generico esta pronto;
+- signals genericos existem;
+- motor de regras generico existe;
+- classificacoes genericas existem;
+- existem pelo menos dois segmentos de prova (`generic` e `_template`);
 - ainda nao ha regras de pneu hardcoded;
 - o projeto serve como base para imobiliaria, material de construcao, autopecas,
   clinicas etc.;
-- podemos criar a tag `farejador-base-v1`.
+- podemos criar a tag `farejador-base-v1` quando o checklist operacional tambem
+  estiver verde.
 
-Nao implementar F2A-04 sem esse aviso.
+Nao implementar F2A-05 sem esse aviso.
 
 ## O que fica pendente em paralelo
 
-Essas tarefas nao bloqueiam iniciar F2a, mas bloqueiam producao plena:
+Essas tarefas nao bloqueiam iniciar F2a, mas bloqueiam producao plena e a tag final
+caso ainda estejam abertas:
 
 - shadow mode por periodo combinado;
 - rotacao de secrets;
 - `DATABASE_CA_CERT` configurado no Coolify;
 - harness de integracao com Postgres real;
 - Zod permissivo nos mappers criticos;
-- limpeza do caminho legado de body.
+- limpeza do caminho legado de body;
+- limpeza dos stubs orfaos de teste em `environment=test`.
 

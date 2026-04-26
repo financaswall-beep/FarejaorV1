@@ -51,6 +51,8 @@ farejador-base-v1
 - [x] Prompt F2A-01 criado para Kimi.
 - [ ] Worker/servico generico de enrichment deterministico.
 - [ ] Estrutura de regras declarativas por segmento.
+- [ ] Roteamento de segmento por `environment + chatwoot_account_id`.
+- [ ] Classificacoes deterministicas genericas.
 - [ ] Escrita somente em `analytics.*`.
 - [ ] Nenhuma regra de pneu hardcoded no nucleo.
 - [ ] Teste provando que um segmento pode ser trocado sem mexer em `raw.*` ou `core.*`.
@@ -157,7 +159,7 @@ Motivo de perda = frete / prazo / estoque / preco
 
 ## Quando criar a tag `farejador-base-v1`
 
-Momento exato: depois de concluir F2A-02 e antes de criar `segments/tires`.
+Momento exato: depois de concluir F2A-03 e antes de criar `segments/tires`.
 
 Criar a tag quando estes comandos estiverem verdes:
 

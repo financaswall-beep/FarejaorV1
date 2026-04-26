@@ -33,9 +33,12 @@ Voce pode criar/alterar somente:
 
 - src/enrichment/signals.service.ts
 - src/enrichment/signals.repository.ts
+- src/enrichment/cli.ts
 - src/enrichment/index.ts se necessario
 - tests/unit/enrichment/signals.service.test.ts
 - tests/unit/enrichment/signals.repository.test.ts
+- tests/unit/enrichment/enrichment.cli.test.ts
+- package.json apenas para adicionar script enrich
 - docs/tasks/F2A-01-conversation-signals.md se precisar registrar detalhe da entrega
 
 Nao crie worker automatico nesta task.
@@ -54,6 +57,7 @@ Nao crie regra de pneus.
 - Nao chamar LLM.
 - Nao criar endpoint admin.
 - Nao alterar migrations antigas.
+- Pode alterar package.json somente para adicionar o script enrich.
 - Nao adicionar dependencia em package.json.
 - Nao alterar src/shared/types/chatwoot.ts.
 
@@ -103,7 +107,19 @@ Cobrir:
 - handoff_count vindo de assignments;
 - media_text_ratio quando ha anexos;
 - SQL de upsert idempotente em analytics.conversation_signals;
+- CLI aceita --conversation-id e chama o servico;
 - garantia textual de que o SQL nao contem INSERT/UPDATE em raw. ou core.
+
+---
+
+## CLI obrigatorio
+
+Adicionar script:
+
+npm run enrich -- --conversation-id=<uuid> --segment=generic
+
+Nesta task, --segment pode ser aceito e ignorado com log claro. O CLI deve executar
+conversation_signals para a conversa informada.
 
 ---
 
