@@ -28,6 +28,9 @@ Depois de F2A-03:
 - [ ] Confirmado que nao existe `segments/tires`.
 - [ ] Confirmado que `src/enrichment/*` nao tem palavras de pneus hardcoded.
 - [ ] Confirmado que ha pelo menos dois segmentos de prova: `generic` e `_template`.
+- [ ] Migration `0011_relax_hint_type_check.sql` aplicada (CHECK fechado removido para extensibilidade por segmento).
+- [ ] `SIGNAL_TIMEZONE` documentado em `docs/CONFIG.md` e default coerente com a operacao atual.
+- [ ] `src/enrichment/rules.loader.ts` resolve `segments/` via `import.meta.url` (sem dependencia de `process.cwd()`).
 - [ ] Wallace aprovou criar tag.
 
 ## Checklist operacional antes da tag final

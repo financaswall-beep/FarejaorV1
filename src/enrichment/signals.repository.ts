@@ -4,6 +4,7 @@ export async function computeAndUpsertSignals(
   client: PoolClient,
   conversationId: string,
   environment: string,
+  timezone: string,
 ): Promise<boolean> {
   const result = await client.query(
     `WITH conversation_ref AS (
@@ -91,8 +92,8 @@ export async function computeAndUpsertSignals(
        mg.max_gap_seconds,
        CASE WHEN ma.total_messages > 1 THEN EXTRACT(EPOCH FROM (ma.last_message_at - ma.first_message_at))::INTEGER ELSE NULL END,
        COALESCE(h.handoff_count, 0)::SMALLINT,
-       EXTRACT(HOUR FROM cr.started_at AT TIME ZONE 'America/Sao_Paulo')::SMALLINT,
-       EXTRACT(DOW FROM cr.started_at AT TIME ZONE 'America/Sao_Paulo')::SMALLINT,
+       EXTRACT(HOUR FROM cr.started_at AT TIME ZONE $3)::SMALLINT,
+       EXTRACT(DOW FROM cr.started_at AT TIME ZONE $3)::SMALLINT,
        now(),
        'f2a_signals_v1',
        'sql_aggregation_v1',
@@ -127,7 +128,7 @@ export async function computeAndUpsertSignals(
        truth_type = EXCLUDED.truth_type,
        confidence_level = EXCLUDED.confidence_level
      RETURNING conversation_id`,
-    [conversationId, environment],
+    [conversationId, environment, timezone],
   );
 
   return (result.rowCount ?? 0) > 0;

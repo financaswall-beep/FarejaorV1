@@ -129,6 +129,22 @@ segments/<segment>/
   README.md
 ```
 
+### Auditoria pos-F2A-02 (Opus, 2026-04-25)
+
+Pontos arquiteturais corrigidos antes de F2A-03:
+
+- `0011_relax_hint_type_check.sql` — removido CHECK fechado em
+  `analytics.linguistic_hints.hint_type` (bloqueava F2A-05 e qualquer segmento
+  futuro com vocabulario proprio). Convencao: hints genericos em
+  `segments/generic`; hints de segmento podem usar prefixo namespaced.
+- `SIGNAL_TIMEZONE` em `env.ts` — timezone de `started_hour_local`/`dow_local`
+  passou a ser parametrizado (default `America/Sao_Paulo`); SQL nao tem mais
+  timezone hardcoded.
+- `rules.loader.ts` — `SEGMENTS_BASE` resolvido via `import.meta.url` (com
+  override `SEGMENTS_DIR`), nao mais via `process.cwd()`.
+
+Numero da migration de F2A-03 deslocado para `0012`.
+
 ### F2A-03 - Classificacoes deterministicas genericas
 
 Status: proxima entrega.

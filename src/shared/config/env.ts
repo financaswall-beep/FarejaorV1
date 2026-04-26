@@ -17,6 +17,7 @@ const envSchema = z.object({
   ADMIN_AUTH_TOKEN: z.string().min(1),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   DATABASE_CA_CERT: z.string().optional(),
+  SIGNAL_TIMEZONE: z.string().min(1).default('America/Sao_Paulo'),
   SKIP_EVENT_TYPES: z
     .string()
     .default('')

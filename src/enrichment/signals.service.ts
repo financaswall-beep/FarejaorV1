@@ -5,6 +5,7 @@ export async function enrichConversation(
   client: PoolClient,
   conversationId: string,
   environment: string,
+  timezone: string,
 ): Promise<boolean> {
-  return computeAndUpsertSignals(client, conversationId, environment);
+  return computeAndUpsertSignals(client, conversationId, environment, timezone);
 }

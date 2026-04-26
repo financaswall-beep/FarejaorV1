@@ -98,6 +98,21 @@ Regras:
 - `locale` vem do segmento carregado, nao do roteamento;
 - na F2A-05, depois da tag base, a rota da conta real pode apontar para `tires`.
 
+### Localizacao do diretorio segments/
+
+`src/enrichment/rules.loader.ts` resolve `segments/` via `import.meta.url` (relativo
+ao proprio modulo), nao via `process.cwd()`. Isso garante que o CLI funcione mesmo
+quando executado de fora da raiz do repositorio.
+
+Override opcional para testes/deploy:
+
+```text
+SEGMENTS_DIR=/caminho/customizado/segments
+```
+
+Lido direto de `process.env` para nao acoplar `rules.loader` ao schema validado de
+`env.ts` (rules.loader e usado em testes que nao precisam de DATABASE_URL etc.).
+
 ## Estrutura de segmento
 
 Todo segmento deve ter quatro arquivos:
@@ -165,6 +180,10 @@ Nao entende texto. So mede estrutura.
 ### `src/enrichment/signals.repository.ts`
 
 Faz upsert em `analytics.conversation_signals`.
+
+Timezone para `started_hour_local` e `started_dow_local` vem por parametro
+(`SIGNAL_TIMEZONE` em `env.ts`, default `America/Sao_Paulo`). Nada hardcoded em
+SQL para manter a base portavel para outras regioes.
 
 ### `src/enrichment/rules.loader.ts`
 
@@ -240,13 +259,23 @@ migration futura.
 
 Para pistas textuais por mensagem.
 
-Exemplos:
+Exemplos genericos (vivem em `segments/generic`):
 
 - price_complaint;
 - urgency_marker;
 - abandonment_marker;
 - positive_marker;
 - competitor_mention.
+
+`hint_type` e TEXT livre (sem CHECK fechado a partir de migration 0011). Convencao
+para extensibilidade por segmento:
+
+- hints genericos vivem em `segments/generic/rules.json`;
+- hints especificos de segmento podem usar prefixo namespaced quando o termo so
+  faz sentido naquele vertical (ex.: `tire_size_mentioned`, `mortgage_request`).
+
+Auditoria contra termos de segmento no nucleo continua via grep no diretorio
+`src/enrichment/*` no checklist de fork.
 
 Fonte esperada:
 

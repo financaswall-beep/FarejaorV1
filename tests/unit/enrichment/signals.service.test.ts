@@ -9,14 +9,14 @@ vi.mock('../../../src/enrichment/signals.repository.js', () => ({
 describe('signals.service', () => {
   it('delegates to repository with correct arguments', async () => {
     const client = {} as never;
-    await enrichConversation(client, 'conv-uuid', 'test');
+    await enrichConversation(client, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     expect(computeAndUpsertSignals).toHaveBeenCalledTimes(1);
-    expect(computeAndUpsertSignals).toHaveBeenCalledWith(client, 'conv-uuid', 'test');
+    expect(computeAndUpsertSignals).toHaveBeenCalledWith(client, 'conv-uuid', 'test', 'America/Sao_Paulo');
   });
 
   it('returns repository result', async () => {
     const client = {} as never;
-    await expect(enrichConversation(client, 'conv-uuid', 'test')).resolves.toBe(true);
+    await expect(enrichConversation(client, 'conv-uuid', 'test', 'UTC')).resolves.toBe(true);
   });
 });

@@ -98,6 +98,7 @@ describe('cli runCli', () => {
         ADMIN_AUTH_TOKEN: 'test-admin-token',
         LOG_LEVEL: 'info',
         SKIP_EVENT_TYPES: [],
+        SIGNAL_TIMEZONE: 'America/Sao_Paulo',
       },
     }));
 
@@ -108,7 +109,7 @@ describe('cli runCli', () => {
   it('accepts --conversation-id and calls enrichment', async () => {
     const cli = await loadCli();
     await expect(cli.runCli(['node', 'cli.js', '--conversation-id=conv-uuid'])).resolves.not.toThrow();
-    expect(queryMock).toHaveBeenCalledWith(expect.any(String), ['conv-uuid', 'test']);
+    expect(queryMock).toHaveBeenCalledWith(expect.any(String), ['conv-uuid', 'test', 'America/Sao_Paulo']);
   });
 
   it('throws when conversation does not exist in the selected environment', async () => {

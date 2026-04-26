@@ -11,12 +11,12 @@ describe('signals.repository', () => {
 
   it('executes upsert into analytics.conversation_signals with correct params', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     expect(client.query).toHaveBeenCalledOnce();
     const [sql, params] = client.query.mock.calls[0] as [string, unknown[]];
 
-    expect(params).toEqual(['conv-uuid', 'test']);
+    expect(params).toEqual(['conv-uuid', 'test', 'America/Sao_Paulo']);
     expect(sql).toContain('INSERT INTO analytics.conversation_signals');
     expect(sql).toContain('ON CONFLICT (conversation_id) DO UPDATE');
     expect(sql).toContain('RETURNING conversation_id');
@@ -24,19 +24,19 @@ describe('signals.repository', () => {
 
   it('returns true when a conversation signal row is upserted', async () => {
     const client = createMockClient();
-    await expect(computeAndUpsertSignals(client as never, 'conv-uuid', 'test')).resolves.toBe(true);
+    await expect(computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo')).resolves.toBe(true);
   });
 
   it('returns false when conversation does not exist in the environment', async () => {
     const client = createMockClient();
     client.query.mockResolvedValueOnce({ rowCount: 0, rows: [] });
 
-    await expect(computeAndUpsertSignals(client as never, 'missing-conv', 'test')).resolves.toBe(false);
+    await expect(computeAndUpsertSignals(client as never, 'missing-conv', 'test', 'America/Sao_Paulo')).resolves.toBe(false);
   });
 
   it('contains all required metrics in the query', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -57,7 +57,7 @@ describe('signals.repository', () => {
 
   it('includes required provenance values', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -69,7 +69,7 @@ describe('signals.repository', () => {
 
   it('reads only from core tables', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -81,7 +81,7 @@ describe('signals.repository', () => {
 
   it('does not contain INSERT or UPDATE into raw schema', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
     const lowerSql = sql.toLowerCase();
@@ -92,7 +92,7 @@ describe('signals.repository', () => {
 
   it('does not contain INSERT or UPDATE into core schema', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
     const lowerSql = sql.toLowerCase();
@@ -103,7 +103,7 @@ describe('signals.repository', () => {
 
   it('covers conversation without messages via COALESCE zeroes', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -114,7 +114,7 @@ describe('signals.repository', () => {
 
   it('computes media_text_ratio only when total_messages > 0', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -124,7 +124,7 @@ describe('signals.repository', () => {
 
   it('computes first_response_seconds only when agent responds after contact', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -134,7 +134,7 @@ describe('signals.repository', () => {
 
   it('computes max_gap_seconds from consecutive messages', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 
@@ -142,9 +142,20 @@ describe('signals.repository', () => {
     expect(sql).toContain('max_gap_seconds');
   });
 
+  it('passes timezone as a query parameter (no hardcoded zone in SQL)', async () => {
+    const client = createMockClient();
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'UTC');
+
+    const [sql, params] = client.query.mock.calls[0] as [string, unknown[]];
+
+    expect(params).toEqual(['conv-uuid', 'test', 'UTC']);
+    expect(sql).not.toContain("'America/Sao_Paulo'");
+    expect(sql).toContain('AT TIME ZONE $3');
+  });
+
   it('computes handoff_count from conversation_assignments', async () => {
     const client = createMockClient();
-    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test');
+    await computeAndUpsertSignals(client as never, 'conv-uuid', 'test', 'America/Sao_Paulo');
 
     const [sql] = client.query.mock.calls[0] as [string, unknown[]];
 

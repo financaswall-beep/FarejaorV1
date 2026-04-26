@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   routingSchema,
   rulesetSchema,
@@ -11,7 +12,14 @@ import {
   type Lexicon,
 } from './rules.types.js';
 
-const SEGMENTS_BASE = resolve(process.cwd(), 'segments');
+// src/enrichment/rules.loader.ts -> ../../segments resolves to <repo>/segments
+// regardless of cwd. Env override (SEGMENTS_DIR) wins for tests/deploys.
+// Lido direto de process.env para nao acoplar este modulo a validacao de env.ts
+// (rules.loader e usado em testes que nao precisam de DATABASE_URL etc.).
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SEGMENTS_BASE = process.env.SEGMENTS_DIR
+  ? resolve(process.env.SEGMENTS_DIR)
+  : resolve(HERE, '..', '..', 'segments');
 
 function segmentDir(segment: string): string {
   return join(SEGMENTS_BASE, segment);

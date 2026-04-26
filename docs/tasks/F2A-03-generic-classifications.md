@@ -30,7 +30,7 @@ pneu, imobiliaria ou outro segmento, nao gravar nesta task.
 
 - `src/enrichment/classification.service.ts`
 - `src/enrichment/classifications.repository.ts`
-- `db/migrations/0011_classification_ruleset_auditability.sql`
+- `db/migrations/0012_classification_ruleset_auditability.sql`
 - `tests/unit/enrichment/classification.service.test.ts`
 - `tests/unit/enrichment/classifications.repository.test.ts`
 - `docs/tasks/F2A-03-generic-classifications.md`
@@ -63,6 +63,11 @@ Confidence deve refletir a forca da evidencia. Se a evidencia for fraca, nao gra
 classificacao.
 
 ## Migration obrigatoria
+
+Numero: `0012_classification_ruleset_auditability.sql`. O numero `0011` ja foi
+usado por `0011_relax_hint_type_check.sql` (auditoria pos-F2A-02 que removeu o
+CHECK fechado em `analytics.linguistic_hints.hint_type` para permitir
+extensibilidade por segmento).
 
 Criar migration nova, sem alterar migrations antigas:
 

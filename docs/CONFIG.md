@@ -23,6 +23,8 @@ nunca `process.env.X` direto.
 | `ADMIN_AUTH_TOKEN` | sim | Bearer simples para proteger `/admin/*`. | `<long-random>` |
 | `LOG_LEVEL` | não | `trace`/`debug`/`info`/`warn`/`error`. Default `info` em prod, `debug` em dev. | `info` |
 | `SKIP_EVENT_TYPES` | não | Lista CSV de `event_type` a marcar como `skipped` na normalização. `raw.raw_events` continua sendo gravado. Default vazio. | `message_updated` |
+| `SIGNAL_TIMEZONE` | não | Timezone IANA usado por `signals.repository` para `started_hour_local` / `started_dow_local`. Default `America/Sao_Paulo`. Trocar para portar a base para outra região. | `America/Sao_Paulo` |
+| `SEGMENTS_DIR` | não | Override do diretório `segments/`. Default: resolvido relativo a `rules.loader` via `import.meta.url`. Lido direto de `process.env` (não passa por `env.ts`) para não acoplar `rules.loader` à validação de DB. | `/opt/farejador/segments` |
 
 ## Regras
 

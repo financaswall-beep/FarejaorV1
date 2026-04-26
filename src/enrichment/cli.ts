@@ -38,7 +38,12 @@ export async function runCli(argv: string[]): Promise<void> {
 
   const client = await pool.connect();
   try {
-    const enriched = await enrichConversation(client, options.conversationId, env.FAREJADOR_ENV);
+    const enriched = await enrichConversation(
+      client,
+      options.conversationId,
+      env.FAREJADOR_ENV,
+      env.SIGNAL_TIMEZONE,
+    );
     if (!enriched) {
       throw new Error(`Conversation not found in environment ${env.FAREJADOR_ENV}: ${options.conversationId}`);
     }
