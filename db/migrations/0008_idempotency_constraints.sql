@@ -9,8 +9,9 @@
 --
 -- Solução: UNIQUE constraint no banco, que é atômica.
 -- O WHERE NOT EXISTS no repo fica como defesa-em-profundidade.
--- O app passa a usar ON CONFLICT DO NOTHING implicitamente
--- via a constraint — sem alterar código existente.
+-- O app também deve usar ON CONFLICT ON CONSTRAINT ... DO NOTHING
+-- para que uma duplicata concorrente seja tratada como idempotência,
+-- não como erro do worker.
 --
 -- Dedup script roda ANTES de adicionar as constraints para
 -- não quebrar em ambientes com duplicatas pré-existentes.

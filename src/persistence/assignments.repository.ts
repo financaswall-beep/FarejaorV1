@@ -28,7 +28,8 @@ export async function insertAssignment(
         AND agent_id = input.agent_id
         AND team_id IS NOT DISTINCT FROM input.team_id
         AND assigned_at = input.assigned_at
-    )`,
+    )
+    ON CONFLICT ON CONSTRAINT assignments_dedup_key DO NOTHING`,
     [
       assignment.environment,
       conversationId,

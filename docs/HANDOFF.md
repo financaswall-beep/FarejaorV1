@@ -136,6 +136,7 @@ Auditoria tecnica completa + hardening deployado antes de abrir Fase 2a.
 ### Codigo deployado (commit 66b9537):
 
 - Reconcile usa `reconcile-v2:tipo:env:account_id:id:ts` — inclui `account_id` para evitar colisao cross-account.
+- Status events e assignments usam `ON CONFLICT ON CONSTRAINT ... DO NOTHING` nos repositories — a constraint do banco protege concorrencia sem transformar replay/duplicata em `failed`.
 - `DATABASE_CA_CERT` via env: SSL com validacao de certificado quando configurado. Aviso em prod sem CA.
 - `first_seen_at` em `core.contacts` nao zera mais no UPDATE.
 - `MAX_PER_POLL` (era `BATCH_SIZE`): nome correto, comentario explicando comportamento de drenagem.

@@ -39,7 +39,8 @@ export async function insertStatusEvent(
         AND to_value IS NOT DISTINCT FROM input.to_value
         AND occurred_at = input.occurred_at
         AND raw_event_id IS NOT DISTINCT FROM input.raw_event_id
-    )`,
+    )
+    ON CONFLICT ON CONSTRAINT status_events_dedup_key DO NOTHING`,
     [
       event.environment,
       conversationId,

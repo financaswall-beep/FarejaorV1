@@ -28,6 +28,7 @@ describe('auxiliary event repositories', () => {
     expect(sql).toContain('$1::env_t AS environment');
     expect(sql).toContain('WHERE NOT EXISTS');
     expect(sql).toContain('raw_event_id IS NOT DISTINCT FROM input.raw_event_id');
+    expect(sql).toContain('ON CONFLICT ON CONSTRAINT status_events_dedup_key DO NOTHING');
   });
 
   it('inserts assignments idempotently with a logical existence check', async () => {
@@ -51,5 +52,6 @@ describe('auxiliary event repositories', () => {
     expect(sql).toContain('$1::env_t AS environment');
     expect(sql).toContain('WHERE NOT EXISTS');
     expect(sql).toContain('team_id IS NOT DISTINCT FROM input.team_id');
+    expect(sql).toContain('ON CONFLICT ON CONSTRAINT assignments_dedup_key DO NOTHING');
   });
 });
