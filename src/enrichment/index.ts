@@ -5,4 +5,7 @@ export { loadRouting, resolveSegment, loadSegment, computeRulesetHash, loadRules
 export { applyRules } from './rules.engine.js';
 export { insertHints } from './hints.repository.js';
 export { insertFacts } from './facts.repository.js';
+export { enrichClassifications, classifyConversation, deriveRulesetHash } from './classification.service.js';
+export { upsertClassifications } from './classifications.repository.js';
 export type { LoadedSegment, Hint, Fact, Ruleset, Lexicon, Routing, Rule } from './rules.types.js';
+export type { ClassificationInput, ConversationData, ConversationSignals, ConversationHint, ConversationFact } from './classification.service.js';

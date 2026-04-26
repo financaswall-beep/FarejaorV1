@@ -159,7 +159,7 @@ Pendente da F1.5:
   - [x] F2A-01: `conversation_signals` genericos implementado, auditado e publicado.
   - [x] F2A-02: motor generico de regras declarativas, routing, `_template` e UNIQUE de hints.
   - [x] Auditoria pos-F2A-02: migration `0011` relaxa CHECK de `hint_type`; `SIGNAL_TIMEZONE` parametrizado; `SEGMENTS_BASE` via `import.meta.url`.
-  - [ ] F2A-03: classificacoes deterministicas genericas.
+  - [x] F2A-03: classificacoes deterministicas genericas.
   - [ ] F2A-04: fronteira do fork e tag `farejador-base-v1`.
   - [ ] F2A-05: pacote `segments/tires` somente depois da tag.
 - [ ] Fase 2b: enrichment com LLM escrevendo somente em `analytics.*`.

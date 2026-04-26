@@ -141,3 +141,44 @@ baixa antes dos segmentos adicionarem vocabulario proprio. Isso e esperado.
 - idempotencia por `(environment, conversation_id, dimension, source, extractor_version, ruleset_hash)`;
 - classifications carregam `ruleset_hash`;
 - SQL nao escreve em `raw.*` nem `core.*`.
+
+---
+
+## Entrega F2A-03
+
+### Arquivos alterados
+- `src/enrichment/classification.service.ts` (criado)
+- `src/enrichment/classifications.repository.ts` (criado)
+- `db/migrations/0012_classification_ruleset_auditability.sql` (criado)
+- `src/enrichment/cli.ts` (modificado — adicionado rules engine e classifications ao pipeline)
+- `src/enrichment/index.ts` (modificado — exports dos novos modulos)
+- `tests/unit/enrichment/classification.service.test.ts` (criado)
+- `tests/unit/enrichment/classifications.repository.test.ts` (criado)
+- `tests/unit/enrichment/enrichment.cli.test.ts` (modificado — atualizado para novo comportamento do CLI)
+- `docs/tasks/F2A-03-generic-classifications.md` (modificado — registro de entrega)
+
+### Checklist
+- [x] Migration 0012 criada: `ruleset_hash` em `analytics.conversation_classifications`; UNIQUE `classifications_dedup_key` com dedup preventivo; idempotente via `DO $$ IF NOT EXISTS ... END $$`.
+- [x] `src/enrichment/classification.service.ts`: leitura de `analytics.conversation_signals`, `analytics.linguistic_hints`, `analytics.conversation_facts`; regras determinísticas para `urgency`, `buyer_intent`, `stage_reached`, `loss_reason`, `final_outcome`; `deriveRulesetHash` com herança, combinação SHA-256 ou sentinela `no_ruleset_v1`.
+- [x] `src/enrichment/classifications.repository.ts`: INSERT com `ON CONFLICT ON CONSTRAINT classifications_dedup_key DO UPDATE` em `analytics.conversation_classifications`.
+- [x] `src/enrichment/cli.ts`: pipeline signals -> rules engine -> classifications, cada etapa idempotente, mantendo retrocompat com `--conversation-id` e `--segment`.
+- [x] Provenance: `source='deterministic_classification_v1'`, `truth_type='inferred'`, `extractor_version='f2a_classification_v1'`.
+- [x] Testes unitarios cobrem: sem evidencia = sem classificacao, urgencia, loss_reason=price, buyer_intent=high, stage_reached=quote_sent/purchase_intent, final_outcome=won/lost, ruleset_hash simples/combinado/sentinela, idempotencia SQL, ausencia de INSERT em raw/core, ausencia de vocabulario de pneu.
+- [x] `npm run typecheck` verde.
+- [x] `npm test` 192/192 verde (32 arquivos).
+- [x] `npm run build` verde.
+
+### Pendencias
+- Validacao Supabase real nao executada: DATABASE_URL nao disponivel nesta sessao.
+- A migration 0012 deve ser aplicada manualmente no banco antes de usar os repositories em producao.
+
+### Riscos
+- `final_outcome=won` baseado em `positive_marker + price_quoted` tem confianca moderada (0.70). Pode gerar falsos positivos se o cliente disser "pode ser" sem efetivamente fechar. Ajuste de threshold pode ser feito em task futura com dados reais.
+- `loss_reason=price` so e gerado quando `price_complaint` existe e `positive_marker` nao existe. Se o cliente reclamar de preco mas depois concordar, a loss_reason desaparece (comportamento esperado de snapshot).
+- `delivery` e `stock` nao sao gerados nesta task por falta de evidencia generica clara; isso e intencional e documentado.
+
+### Validacao executada
+- `npm run typecheck` -> verde
+- `npm test` -> 32 arquivos, 192 testes, todos passaram
+- `npm run build` -> verde
+- Supabase real -> nao executado (DATABASE_URL nao disponivel nesta sessao)

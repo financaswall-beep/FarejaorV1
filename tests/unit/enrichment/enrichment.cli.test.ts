@@ -121,12 +121,12 @@ describe('cli runCli', () => {
     );
   });
 
-  it('accepts and ignores --segment with clear log', async () => {
+  it('uses --segment for rules engine and classification', async () => {
     const cli = await loadCli();
     await expect(cli.runCli(['node', 'cli.js', '--conversation-id=conv-uuid', '--segment=generic'])).resolves.not.toThrow();
     expect(loggerMock.info).toHaveBeenCalledWith(
-      { segment: 'generic' },
-      'segment argument accepted and ignored in F2A-01',
+      expect.objectContaining({ segment: 'generic', conversation_id: 'conv-uuid' }),
+      'starting enrichment',
     );
   });
 });
