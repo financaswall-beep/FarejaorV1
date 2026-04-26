@@ -126,8 +126,8 @@ Legenda: feito, em andamento, proximo, futuro.
 Ressalvas antes de producao plena:
 
 - [ ] Shadow mode com webhooks reais por periodo combinado.
-- [ ] Rotacionar secrets antes de producao plena.
-- [ ] Configurar `DATABASE_CA_CERT` no Coolify para SSL com validacao de certificado.
+- [x] ~~Rotacionar secrets antes de producao plena.~~ Dispensado em 26/04/2026: o repo base `farejador-base-v1` sera arquivado como template; fork operacional sera repo novo com secrets novos por construcao.
+- [x] ~~Configurar `DATABASE_CA_CERT` no Coolify para SSL com validacao de certificado.~~ Resolvido em 26/04/2026: Supabase connection pooler nao suporta validacao de cadeia. SSL permanece ativo via `rejectUnauthorized:false` (conexao criptografada). Variavel removida do `env.ts` e do `db.ts`.
 
 ## 5.1 F1.5 - Hardening pre-producao plena (2026-04-25)
 

@@ -24,8 +24,8 @@ ainda nao foram criadas — `segments/tires` so depois da tag (F2A-05).
 Pendencias antes de criar a tag:
 
 1. Shadow mode real rodado por periodo combinado sem fila travada.
-2. Secrets rotacionados antes de producao plena.
-3. `DATABASE_CA_CERT` configurado no Coolify.
+2. ~~Secrets rotacionados antes de producao plena.~~ **Dispensado em 26/04/2026:** o repo base (`farejador-base-v1`) sera arquivado como template e nao operara em producao plena. O fork operacional (ex.: `segments/tires`) sera criado em repo novo com secrets novos por construcao.
+3. ~~`DATABASE_CA_CERT` configurado no Coolify.~~ **Resolvido em 26/04/2026:** Supabase connection pooler nao suporta validacao de cadeia de cert. SSL permanece ativo via `rejectUnauthorized:false` — conexao criptografada. Codigo simplificado em `src/persistence/db.ts`, variavel removida de `env.ts`.
 4. Harness de integracao automatizado com Postgres real (ou decisao documentada).
 
 Nome sugerido para a tag/base:
@@ -43,11 +43,11 @@ farejador-base-v1
 - [x] Reconcile real testado em janela pequena.
 - [x] Dois workers concorrentes validados com Postgres real.
 - [ ] Shadow mode real rodado por periodo combinado sem fila travada.
-- [ ] Secrets rotacionados antes de producao plena.
-- [ ] `DATABASE_CA_CERT` configurado no Coolify.
+- [x] ~~Secrets rotacionados antes de producao plena.~~ Dispensado: repo base sera arquivado como template; fork operacional usara secrets novos.
+- [x] ~~`DATABASE_CA_CERT` configurado no Coolify.~~ Resolvido: pooler nao suporta validacao; SSL ativo sem validacao de cadeia.
 - [ ] Harness de integracao automatizado com Postgres real.
 - [ ] Documentacao de deploy atualizada.
-- [ ] Checklist e handoff atualizados.
+- [x] Checklist e handoff atualizados.
 
 ### Esqueleto minimo da Fase 2a
 

@@ -146,8 +146,8 @@ Ja validado com dados reais:
 Ainda pendente antes de producao plena:
 
 - Manter shadow mode com webhooks reais por periodo combinado.
-- Rotacionar secrets.
-- Configurar `DATABASE_CA_CERT`.
+- ~~Rotacionar secrets.~~ Dispensado: repo base sera arquivado como template; fork operacional usara secrets novos.
+- ~~Configurar `DATABASE_CA_CERT`.~~ Resolvido: Supabase pooler nao suporta validacao de cadeia; SSL criptografado sem validacao mantido.
 - Criar harness de integracao automatizado com Postgres real.
 
 Status do shadow mode:

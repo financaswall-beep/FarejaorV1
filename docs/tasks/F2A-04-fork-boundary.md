@@ -38,8 +38,8 @@ Verificado em 26/04/2026:
 ## Checklist operacional antes da tag final
 
 - [ ] Shadow mode real rodado por periodo combinado sem fila travada.
-- [ ] Secrets rotacionados antes de producao plena.
-- [ ] `DATABASE_CA_CERT` configurado no Coolify.
+- [x] ~~Secrets rotacionados antes de producao plena.~~ Dispensado: repo base sera arquivado como template; fork operacional usara secrets novos por construcao.
+- [x] ~~`DATABASE_CA_CERT` configurado no Coolify.~~ Resolvido: Supabase pooler nao suporta validacao de cadeia; SSL ativo sem validacao (encriptografia mantida).
 - [ ] Harness de integracao com Postgres real criado ou decisao documentada.
 - [ ] Stubs orfaos de teste em `environment=test` limpos ou documentados como dataset de teste.
 
