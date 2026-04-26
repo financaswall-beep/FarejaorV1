@@ -5,9 +5,15 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    include: ['tests/unit/**/*.test.ts'],
-    exclude: ['tests/integration/**'],
-    setupFiles: [],
+    include: ['tests/integration/**/*.integration.test.ts'],
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
   resolve: {
     alias: {

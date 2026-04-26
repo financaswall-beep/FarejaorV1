@@ -138,15 +138,15 @@ Auditoria tecnica completa realizada antes de producao plena. Itens aplicados e 
 - [x] UNIQUE constraint `assignments_dedup_key` em `core.conversation_assignments (environment, conversation_id, agent_id, assigned_at)`: idem.
 - [x] Repositories de status events e assignments usam `ON CONFLICT ON CONSTRAINT ... DO NOTHING`: duplicata concorrente vira no-op idempotente, nao `failed`.
 - [x] Reconcile delivery_id versionado: formato `reconcile-v2:tipo:env:account_id:id:ts` inclui `account_id` para evitar colisao cross-account.
-- [x] SSL com `DATABASE_CA_CERT` via env: `rejectUnauthorized:true` quando CA configurado; aviso em prod sem CA (nao bloqueia ainda — configurar antes de producao plena).
+- [x] SSL ativo com `rejectUnauthorized:false` via Supabase pooler; `DATABASE_CA_CERT` removido porque o pooler nao suporta validacao de cadeia.
 - [x] `first_seen_at` em `core.contacts`: nao zera mais no `ON CONFLICT DO UPDATE`; `COALESCE(now())` no INSERT garante preenchimento na primeira vez.
-- [x] `MAX_PER_POLL` (renomeado de `BATCH_SIZE`): comportamento documentado — encerra ciclo cedo se fila vazia, nao e limite de tentativas.
+- [x] `MAX_PER_POLL` (renomeado de `BATCH_SIZE`): comportamento documentado - encerra ciclo cedo se fila vazia, nao e limite de tentativas.
 - [x] View `ops.orphan_conversation_stubs` + funcao `ops.report_orphan_stubs()`: detecta conversas-stub com `last_event_at IS NULL` ha mais de 10 minutos. 80 stubs de teste identificados (environment=test, conc. test 25/04).
 - [x] `db/migrations/README.md` atualizado: 0007 e 0008 na lista de ordem; pg_cron marcado como requisito de producao (nao opcional).
-- [x] `.env.example` atualizado com `DATABASE_CA_CERT` e instrucoes de obtencao do cert Supabase.
+- [x] `.env.example` atualizado sem `DATABASE_CA_CERT`.
 
 Pendente da F1.5:
-- [ ] Harness de integracao com Postgres real (testes automatizados contra banco real).
+- [x] Harness de integracao com Postgres real criado via Testcontainers e GitHub Actions. Execucao local pendente por falta de Docker Desktop.
 - [ ] Zod permissivo nos mappers criticos (contact, conversation, message).
 - [ ] Limpar body legado do handler e migrar testes para caminho real de producao.
 
@@ -160,7 +160,10 @@ Pendente da F1.5:
   - [x] F2A-02: motor generico de regras declarativas, routing, `_template` e UNIQUE de hints.
   - [x] Auditoria pos-F2A-02: migration `0011` relaxa CHECK de `hint_type`; `SIGNAL_TIMEZONE` parametrizado; `SEGMENTS_BASE` via `import.meta.url`.
   - [x] F2A-03: classificacoes deterministicas genericas.
-  - [x] F2A-04: fronteira do fork — checklist tecnico verde (typecheck/test 192/192/build, sem `segments/tires`, sem vocabulario de pneu em `src/enrichment`, `generic` + `_template` presentes, migrations 0011/0012 aplicadas, `SIGNAL_TIMEZONE` documentado, `rules.loader` via `import.meta.url`). Tag `farejador-base-v1` aguardando checklist operacional (shadow contínuo, secrets rotation, `DATABASE_CA_CERT`, harness integração).
+  - [x] F2A-04: fronteira do fork - checklist tecnico verde; tag farejador-base-v1 aguardando aprovacao do Wallace.
+  - [x] Harness de integracao com Postgres real criado via Testcontainers e GitHub Actions.
+  - [ ] Execucao local de `npm run test:integration` pendente porque Docker Desktop nao esta instalado nesta maquina.
+  - [x] Stubs orfaos em `environment=test` documentados como dataset tecnico de concorrencia; nao bloqueiam a base.
   - [ ] F2A-05: pacote `segments/tires` somente depois da tag.
 - [ ] Fase 2b: enrichment com LLM escrevendo somente em `analytics.*`.
 - [ ] Fase 3: agente conversacional separado, read-only sobre Farejador.

@@ -63,15 +63,14 @@ Validacao atual:
 - `core.conversation_status_events` e `core.conversation_assignments` tem UNIQUE constraints para idempotencia atomica.
 - Repositories auxiliares usam `ON CONFLICT ON CONSTRAINT ... DO NOTHING`, entao conflito concorrente vira no-op e nao `failed`.
 - `core.contacts.first_seen_at` nao e sobrescrito em updates.
-- SSL aceita `DATABASE_CA_CERT` para validacao de certificado; sem CA em prod gera aviso e deve ser corrigido antes de producao plena.
+- SSL usa `rejectUnauthorized:false` com Supabase pooler; `DATABASE_CA_CERT` foi removido porque o pooler nao suporta validacao de cadeia.
 - `ops.orphan_conversation_stubs` e `ops.report_orphan_stubs()` monitoram stubs de conversa.
 
 ## Ressalvas antes de producao plena
 
 - Manter shadow mode por periodo combinado e monitorar `pending`, `failed`, `skipped`, stubs orfaos e latencia da fila.
-- Rotacionar secrets manipulados durante configuracao: token Chatwoot, segredo HMAC, token admin e credenciais do banco se necessario.
-- Configurar `DATABASE_CA_CERT` no Coolify.
-- Adicionar harness de integracao automatizado com Postgres real antes de aumentar o escopo da Fase 2a.
+- Rotacao de secrets dispensada para a base: o fork operacional sera criado em repositorio novo e usara secrets novos por construcao.
+- Harness de integracao automatizado com Postgres real criado via Testcontainers; execucao local depende de Docker Desktop e CI roda via GitHub Actions.
 - Migrar mappers criticos para Zod permissivo e limpar o caminho legado de body dos testes.
 
 ## Decisoes iniciais da F2a

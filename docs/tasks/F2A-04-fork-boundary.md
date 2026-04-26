@@ -40,8 +40,9 @@ Verificado em 26/04/2026:
 - [ ] Shadow mode real rodado por periodo combinado sem fila travada.
 - [x] ~~Secrets rotacionados antes de producao plena.~~ Dispensado: repo base sera arquivado como template; fork operacional usara secrets novos por construcao.
 - [x] ~~`DATABASE_CA_CERT` configurado no Coolify.~~ Resolvido: Supabase pooler nao suporta validacao de cadeia; SSL ativo sem validacao (encriptografia mantida).
-- [ ] Harness de integracao com Postgres real criado ou decisao documentada.
-- [ ] Stubs orfaos de teste em `environment=test` limpos ou documentados como dataset de teste.
+- [x] Harness de integracao com Postgres real criado com Testcontainers e workflow de CI.
+- [ ] Execucao local do harness de integracao pendente porque Docker Desktop nao esta instalado nesta maquina.
+- [x] Stubs orfaos de teste em `environment=test` documentados como dataset tecnico de concorrencia; nao contaminam `environment=prod`.
 
 Se o checklist tecnico estiver verde e o operacional ainda nao, o estado correto e:
 
@@ -64,4 +65,3 @@ cara de segmento ao projeto. Recomendo salvar a base agora com a tag
 farejador-base-v1 antes de continuar, desde que o checklist operacional tambem
 esteja verde.
 ```
-

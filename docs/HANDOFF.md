@@ -148,7 +148,7 @@ Ainda pendente antes de producao plena:
 - Manter shadow mode com webhooks reais por periodo combinado.
 - ~~Rotacionar secrets.~~ Dispensado: repo base sera arquivado como template; fork operacional usara secrets novos.
 - ~~Configurar `DATABASE_CA_CERT`.~~ Resolvido: Supabase pooler nao suporta validacao de cadeia; SSL criptografado sem validacao mantido.
-- Criar harness de integracao automatizado com Postgres real.
+- Harness de integracao automatizado com Postgres real criado; execucao local depende de Docker Desktop.
 
 Status do shadow mode:
 
@@ -180,7 +180,8 @@ Status do shadow mode:
   - 2 workers executados em paralelo.
   - 80/80 `processed`.
   - 0 duplicatas em `core.messages`.
-- Proximo passo operacional: continuar Fase 2a sem LLM em paralelo ao shadow mode, monitorar operacao e rotacionar secrets antes de producao plena.
+- Os 80 stubs orfaos em `environment=test` sao dataset tecnico do teste de concorrencia e nao contaminam `environment=prod`.
+- Proximo passo operacional: criar tag `farejador-base-v1` quando Wallace aprovar e depois bifurcar para o repo operacional.
 
 ## F1.5 - Hardening aplicado em 2026-04-25
 
@@ -196,7 +197,7 @@ Auditoria tecnica completa + hardening deployado antes de producao plena.
 
 - Reconcile usa `reconcile-v2:tipo:env:account_id:id:ts` — inclui `account_id` para evitar colisao cross-account.
 - Status events e assignments usam `ON CONFLICT ON CONSTRAINT ... DO NOTHING` nos repositories — a constraint do banco protege concorrencia sem transformar replay/duplicata em `failed`.
-- `DATABASE_CA_CERT` via env: SSL com validacao de certificado quando configurado. Aviso em prod sem CA.
+- SSL usa `rejectUnauthorized:false` com Supabase pooler. `DATABASE_CA_CERT` foi removido porque o pooler nao suporta validacao de cadeia; a conexao segue criptografada.
 - `first_seen_at` em `core.contacts` nao zera mais no UPDATE.
 - `MAX_PER_POLL` (era `BATCH_SIZE`): nome correto, comentario explicando comportamento de drenagem.
 
@@ -210,10 +211,26 @@ Auditoria tecnica completa + hardening deployado antes de producao plena.
 
 ### Pendente da F1.5 (antes de producao plena):
 
-1. Harness de integracao com Postgres real — testes automatizados que rodam SQL real.
-2. Zod permissivo nos mappers criticos — schemas com `.passthrough()` nos mappers de contact, conversation e message.
-3. Limpar body legado do handler e migrar testes para caminho real de producao.
-4. Configurar `DATABASE_CA_CERT` no Coolify.
+1. Zod permissivo nos mappers criticos — schemas com `.passthrough()` nos mappers de contact, conversation e message.
+2. Limpar body legado do handler e migrar testes para caminho real de producao.
+
+## Harness de integracao
+
+Criado em 26/04/2026:
+
+- `npm run test:integration`
+- `vitest.integration.config.ts`
+- `tests/integration/*`
+- `.github/workflows/ci.yml`
+
+O harness sobe Postgres real com Testcontainers, aplica migrations e valida
+triggers/constraints/idempotencia que mocks nao pegam.
+
+Localmente ainda nao foi executado porque Docker Desktop nao esta instalado nesta
+maquina. No GitHub Actions, o runner `ubuntu-latest` tem Docker disponivel e deve
+executar o harness automaticamente.
+
+Detalhes em `docs/INTEGRATION_TESTS.md`.
 
 ## Fluxo recomendado para Kimi
 
