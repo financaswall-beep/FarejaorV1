@@ -126,19 +126,33 @@ estrutura minima validada, sem regra de negocio real.
 F2A-02 deve calcular um hash deterministico do pacote de regras carregado:
 
 ```text
-ruleset_hash = sha256(rules.json + lexicon.json)
+ruleset_hash = sha256(bytes(rules.json) + "\n" + bytes(lexicon.json))
 ```
 
 Uso:
 
 - gravar em `analytics.linguistic_hints`;
 - gravar em `analytics.conversation_facts`;
+- gravar em `analytics.conversation_classifications` quando a classificacao usar
+  hints/facts derivados de regras;
 - incluir na chave de idempotencia quando a migration permitir;
 - permitir auditoria: mesmo `extractor_version` com arquivo de regra alterado fica
   rastreavel.
 
 `extractor_version` identifica a familia/versao logica do extrator. `ruleset_hash`
 identifica o conteudo exato das regras em disco.
+
+Definicao exata:
+
+- ler os bytes brutos de `rules.json`;
+- adicionar um byte newline (`\n`);
+- ler os bytes brutos de `lexicon.json`;
+- calcular SHA-256 desse buffer;
+- nao reserializar JSON antes de hashear.
+
+`scenarios.json` nao entra no hash porque e fixture/documentacao de validacao do
+segmento, nao entrada do motor de inferencia. Se algum dia o engine consumir
+`scenarios.json`, essa decisao deve mudar antes do uso em producao.
 
 ## Modulos propostos
 
@@ -259,6 +273,13 @@ Exemplos genericos:
 
 Fatos especificos, como `tire_size`, entram apenas no pacote de segmento.
 
+Fatos gerados por regras devem carregar `ruleset_hash`. Backfill de linhas antigas
+deve usar sentinela explicita:
+
+```text
+ruleset_hash = pre_audit_v1
+```
+
 ### `analytics.conversation_classifications`
 
 Para classificacoes derivadas.
@@ -272,6 +293,10 @@ F2A-03 deve preencher classificacoes genericas:
 - loss_reason.
 
 Nao usar valor quando nao houver evidencia clara.
+
+Classificacoes geradas a partir de hints/facts de regras devem carregar o
+`ruleset_hash` usado como entrada. Se uma classificacao combinar varios hashes,
+usar hash deterministico da lista ordenada de hashes de entrada.
 
 Observacao: classificacoes genericas tem cobertura limitada. `loss_reason=delivery`
 e `loss_reason=stock`, por exemplo, ficam mais fortes quando um pacote de segmento
@@ -298,7 +323,7 @@ Politica:
 
 - `conversation_signals`: snapshot atual, upsert por `conversation_id`.
 - `conversation_facts`: historico por `extractor_version` e `ruleset_hash`.
-- `conversation_classifications`: historico por `extractor_version`.
+- `conversation_classifications`: historico por `extractor_version` e `ruleset_hash` quando derivada de regras.
 - `linguistic_hints`: historico por `extractor_version` e `ruleset_hash`, com UNIQUE novo na F2A-02.
 
 Retencao:
@@ -316,7 +341,8 @@ Padroes:
 
 - `conversation_signals`: upsert por `conversation_id`.
 - `conversation_facts`: usar chave existente `(environment, conversation_id, fact_key, source, extractor_version)`.
-- `conversation_classifications`: usar chave existente `(environment, conversation_id, dimension, source, extractor_version)`.
+- `conversation_classifications`: em F2A-03, adicionar `ruleset_hash` e usar chave
+  `(environment, conversation_id, dimension, source, extractor_version, ruleset_hash)`.
 - `linguistic_hints`: criar UNIQUE em migration nova na F2A-02. Chave sugerida:
   `(environment, conversation_id, message_id, hint_type, pattern_id, source, extractor_version, ruleset_hash)`.
 

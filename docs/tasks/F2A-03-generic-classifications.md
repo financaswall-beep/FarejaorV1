@@ -30,6 +30,7 @@ pneu, imobiliaria ou outro segmento, nao gravar nesta task.
 
 - `src/enrichment/classification.service.ts`
 - `src/enrichment/classifications.repository.ts`
+- `db/migrations/0011_classification_ruleset_auditability.sql`
 - `tests/unit/enrichment/classification.service.test.ts`
 - `tests/unit/enrichment/classifications.repository.test.ts`
 - `docs/tasks/F2A-03-generic-classifications.md`
@@ -55,10 +56,31 @@ Usar:
 source = deterministic_classification_v1
 truth_type = inferred
 extractor_version = f2a_classification_v1
+ruleset_hash = <sha256 ou pre_audit_v1>
 ```
 
 Confidence deve refletir a forca da evidencia. Se a evidencia for fraca, nao gravar
 classificacao.
+
+## Migration obrigatoria
+
+Criar migration nova, sem alterar migrations antigas:
+
+```text
+ruleset_hash TEXT NOT NULL DEFAULT 'pre_audit_v1'
+```
+
+Aplicar em `analytics.conversation_classifications`.
+
+Atualizar a idempotencia para considerar:
+
+```text
+(environment, conversation_id, dimension, source, extractor_version, ruleset_hash)
+```
+
+Se a classificacao vier de hints/facts gerados por ruleset, usar o mesmo
+`ruleset_hash`. Se combinar varios hashes, ordenar os hashes e calcular SHA-256 da
+lista unida por newline.
 
 ## Valores iniciais sugeridos
 
@@ -111,5 +133,6 @@ baixa antes dos segmentos adicionarem vocabulario proprio. Isso e esperado.
 - detecta urgencia generica;
 - detecta reclamacao de preco como possivel `loss_reason=price`;
 - detecta sinal de compra como `buyer_intent=high`;
-- idempotencia por `(environment, conversation_id, dimension, source, extractor_version)`;
+- idempotencia por `(environment, conversation_id, dimension, source, extractor_version, ruleset_hash)`;
+- classifications carregam `ruleset_hash`;
 - SQL nao escreve em `raw.*` nem `core.*`.

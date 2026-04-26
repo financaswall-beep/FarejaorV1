@@ -109,10 +109,22 @@ de `analytics.linguistic_hints`.
 Adicionar coluna:
 
 ```text
-ruleset_hash TEXT NOT NULL
+ruleset_hash TEXT NOT NULL DEFAULT 'pre_audit_v1'
 ```
 
-O hash deve ser `sha256(rules.json + lexicon.json)` com serializacao deterministica.
+O hash deve ser:
+
+```text
+sha256(bytes(rules.json) + "\n" + bytes(lexicon.json))
+```
+
+Definicao:
+
+- ler bytes brutos dos arquivos no disco;
+- nao fazer parse/reserializacao JSON para calcular hash;
+- usar exatamente a ordem `rules.json`, newline, `lexicon.json`;
+- `scenarios.json` nao entra no hash porque e fixture/documentacao, nao entrada do
+  motor de inferencia.
 
 Chave sugerida:
 
@@ -123,10 +135,18 @@ Chave sugerida:
 Repository deve usar `ON CONFLICT DO NOTHING` ou `ON CONFLICT ... DO UPDATE` quando
 fizer sentido.
 
-Para `analytics.conversation_facts`, se a migration atual nao tiver `ruleset_hash`,
-esta task deve criar migration nova adicionando a coluna opcional ou obrigatoria
-com backfill seguro. Nao alterar migration antiga. O objetivo e que facts gerados
-por regras tambem sejam auditaveis pelo conteudo exato do ruleset.
+Para `analytics.conversation_facts`, a mesma migration deve adicionar:
+
+```text
+ruleset_hash TEXT NOT NULL DEFAULT 'pre_audit_v1'
+```
+
+Nao alterar migration antiga. A sentinela `pre_audit_v1` significa "linha criada
+antes de existir auditoria por ruleset_hash". Novas linhas geradas pelo motor de
+regras devem gravar o SHA-256 real.
+
+Depois do backfill, manter o default e aceitavel para inserts manuais antigos, mas
+repositories da F2A-02 devem sempre enviar o hash real.
 
 ## Regras permitidas antes do fork
 
@@ -151,6 +171,12 @@ Proibido:
 - marcas de pneus;
 - `segments/tires`.
 
+## Papel de `scenarios.json`
+
+`scenarios.json` e fixture/documentacao do segmento. Ele serve para testes,
+auditoria humana e exemplos. O motor nao deve usar `scenarios.json` para inferencia.
+Por isso ele nao entra no `ruleset_hash`.
+
 ## Saida esperada
 
 Hints:
@@ -172,6 +198,7 @@ Classificacoes ficam para F2A-03.
 - loader valida `locale`;
 - loader rejeita ruleset sem `extractor_version`;
 - loader calcula `ruleset_hash`;
+- loader calcula hash por bytes brutos de `rules.json`, newline e `lexicon.json`;
 - routing escolhe segmento por `environment + chatwoot_account_id`;
 - routing usa `chatwoot_inbox_id` quando informado;
 - routing usa `defaultSegment` quando nao ha match;
@@ -181,3 +208,4 @@ Classificacoes ficam para F2A-03.
 - repositories escrevem somente em `analytics.*`;
 - hints usam constraint de idempotencia.
 - hints e facts carregam `ruleset_hash`.
+- `scenarios.json` nao e usado pelo engine.

@@ -91,6 +91,7 @@ Escopo:
 - `segments/_template/*`;
 - `segments/routing.json`;
 - loader validado por Zod com `locale`;
+- `ruleset_hash` por bytes brutos de `rules.json`, newline e `lexicon.json`;
 - tipos de regra simples: keyword, regex, phrase_set;
 - saida padronizada para `linguistic_hints` e `conversation_facts`;
 - migration nova para idempotencia de `analytics.linguistic_hints`;
