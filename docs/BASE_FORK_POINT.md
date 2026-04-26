@@ -47,7 +47,9 @@ farejador-base-v1
 
 ### Esqueleto minimo da Fase 2a
 
-- [ ] Worker generico de enrichment deterministico.
+- [x] Arquitetura F2a documentada.
+- [x] Prompt F2A-01 criado para Kimi.
+- [ ] Worker/servico generico de enrichment deterministico.
 - [ ] Estrutura de regras declarativas por segmento.
 - [ ] Escrita somente em `analytics.*`.
 - [ ] Nenhuma regra de pneu hardcoded no nucleo.
@@ -154,6 +156,8 @@ Motivo de perda = frete / prazo / estoque / preco
 ```
 
 ## Quando criar a tag `farejador-base-v1`
+
+Momento exato: depois de concluir F2A-02 e antes de criar `segments/tires`.
 
 Criar a tag quando estes comandos estiverem verdes:
 

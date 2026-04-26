@@ -20,6 +20,7 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 - F1-03 admin endpoints: concluida, auditada, corrigida e validada com Chatwoot/Supabase reais.
 - F1.5 hardening pre-producao plena: aplicado e publicado.
 - Fase 1 tecnica: concluida. Estado atual: shadow mode controlado antes de producao plena.
+- Fase 2a: arquitetura definida; primeira entrega planejada e pronta para Kimi executar.
 
 Validacao atual:
 
@@ -72,6 +73,14 @@ Validacao atual:
 - Adicionar harness de integracao automatizado com Postgres real antes de aumentar o escopo da Fase 2a.
 - Migrar mappers criticos para Zod permissivo e limpar o caminho legado de body dos testes.
 
+## Decisoes iniciais da F2a
+
+- F2a comeca por sinais estruturais genericos em `analytics.conversation_signals`.
+- O nucleo de enrichment fica em `src/enrichment/*`.
+- Regras de negocio ficam em `segments/*`.
+- O primeiro pacote de segmento de pneus so deve nascer depois da fronteira do fork.
+- A fronteira do fork acontece ao fim da F2A-02, quando o motor generico existir sem regras de pneus.
+
 ## Stack
 
 - TypeScript + Node.js
@@ -88,5 +97,9 @@ Validacao atual:
 - `docs/DATA_DICTIONARY.md`
 - `docs/KIMI_RULES.md`
 - `docs/phases/PHASE_01.md`
+- `docs/phases/PHASE_02A.md`
+- `docs/F2A_ARCHITECTURE.md`
+- `docs/F2A_KIMI_IMPLEMENTATION_GUIDE.md`
 - `docs/tasks/F1-03-admin.md`
+- `docs/tasks/F2A-01-conversation-signals.md`
 - `docs/adr/`

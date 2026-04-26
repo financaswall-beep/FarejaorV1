@@ -1,6 +1,6 @@
 # Guia das Tabelas do Farejador
 
-Atualizado: 24/04/2026
+Atualizado: 25/04/2026
 
 Este documento foi escrito para estudar o sistema sem precisar entender SQL.
 
@@ -521,7 +521,7 @@ Futuramente:
 
 # 3. Tabelas de relatorios inteligentes (`analytics`)
 
-Essas tabelas sao para fases futuras.
+Essas tabelas comecam a ser usadas na Fase 2a.
 
 Aqui entram os dados que nao vieram diretamente do Chatwoot, mas foram calculados,
 extraidos ou interpretados.

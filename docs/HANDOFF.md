@@ -38,6 +38,7 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | F1.5 hardening | Concluido, publicado e documentado |
 | Fase 1 tecnica | Concluida |
 | Shadow mode Chatwoot real | Em andamento como ressalva operacional antes de producao plena |
+| Fase 2a arquitetura | Definida; F2A-01 pronta para Kimi |
 
 ## F1-01 - entregue
 
@@ -87,6 +88,18 @@ Regras criticas:
 
 A Fase 2a pode ser iniciada. Em paralelo, manter as ressalvas operacionais da Fase 1
 antes de declarar producao plena.
+
+Primeira entrega recomendada:
+
+- F2A-01 `conversation_signals` genericos.
+- Prompt pronto em `docs/prompts/KIMI_F2A-01_PROMPT.md`.
+- Task detalhada em `docs/tasks/F2A-01-conversation-signals.md`.
+
+Fronteira do fork:
+
+- Parar ao fim da F2A-02.
+- Avisar Wallace antes de criar `segments/tires`.
+- Criar tag `farejador-base-v1` se aprovado.
 
 Ja validado com dados reais:
 
@@ -182,6 +195,8 @@ Leia e obedeca docs/KIMI_RULES.md.
 
 Leia tambem:
 - docs/PROJECT.md
+- docs/F2A_ARCHITECTURE.md
+- docs/F2A_KIMI_IMPLEMENTATION_GUIDE.md
 - docs/CONTRACTS.md
 - docs/CONFIG.md
 - docs/LOGGING.md
