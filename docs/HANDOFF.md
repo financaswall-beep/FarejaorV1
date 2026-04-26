@@ -39,7 +39,8 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | Fase 1 tecnica | Concluida |
 | Shadow mode Chatwoot real | Em andamento como ressalva operacional antes de producao plena |
 | F2A-01 conversation signals | Concluida, auditada e publicada |
-| Fase 2a proxima entrega | F2A-02 motor generico de regras declarativas |
+| F2A-02 motor generico de regras | Concluida, auditada e aguardando aplicacao da migration 0010 no Supabase |
+| Fase 2a proxima entrega | F2A-03 classificacoes deterministicas genericas |
 
 ## F1-01 - entregue
 
@@ -97,11 +98,20 @@ Entrega concluida:
 - Validacao: `npm run typecheck`, `npm test` 133/133 e `npm run build`.
 - Task detalhada e auditoria em `docs/tasks/F2A-01-conversation-signals.md`.
 
-Proxima entrega recomendada:
+Entrega concluida:
 
 - F2A-02 motor generico de regras declarativas.
 - Usar `docs/tasks/F2A-02-generic-rule-engine.md`.
 - Nao criar regras de pneu ainda.
+- Validacao local: `npm run typecheck`, `npm test` 170/170 e `npm run build`.
+- Pendencia operacional: aplicar `db/migrations/0010_analytics_ruleset_auditability.sql` no Supabase antes de usar repositories de hints/facts em producao.
+
+Proxima entrega recomendada:
+
+- F2A-03 classificacoes deterministicas genericas.
+- Usar `docs/tasks/F2A-03-generic-classifications.md`.
+- Ainda nao criar regras de pneu.
+- Ainda nao criar tag/fork; a fronteira vem somente depois da F2A-03.
 
 Fronteira do fork:
 

@@ -92,6 +92,8 @@ Auditoria aplicada:
 
 ### F2A-02 - Motor generico de regras declarativas
 
+Status: concluida, auditada e aguardando aplicacao da migration 0010 no Supabase antes de uso em producao.
+
 Criar estrutura para regras por segmento, sem escrever regras de pneu.
 
 Escopo:
@@ -107,6 +109,15 @@ Escopo:
 - teste provando que trocar o segmento troca as regras sem tocar em `raw.*`,
   `core.*` ou no motor.
 
+Auditoria aplicada:
+
+- routing aceita `chatwoot_inbox_id` opcional e exige ids positivos;
+- schemas rejeitam regex invalido e regra incompleta antes do runtime;
+- ids de regra duplicados sao rejeitados;
+- loader valida consistencia de segmento e locale;
+- migration 0010 evita duplicata por `pattern_id` nulo e cria `hints_dedup_key` de forma segura para reaplicacao;
+- validacao final: `npm run typecheck`, `npm test` 170/170 e `npm run build`.
+
 Estrutura minima de cada segmento:
 
 ```text
@@ -118,6 +129,8 @@ segments/<segment>/
 ```
 
 ### F2A-03 - Classificacoes deterministicas genericas
+
+Status: proxima entrega.
 
 Gerar `analytics.conversation_classifications` a partir de sinais, fatos e hints
 genericos:

@@ -1,0 +1,55 @@
+{
+  "segment": "generic",
+  "locale": "pt-BR",
+  "extractor_version": "f2a_rules_v1",
+  "rules": [
+    {
+      "id": "price_complaint_keyword_v1",
+      "type": "keyword",
+      "target": "hint",
+      "hint_type": "price_complaint",
+      "keywords": ["caro", "barato", "preço", "preco", "valor", "custa", "cobrou"],
+      "confidence_level": 0.85
+    },
+    {
+      "id": "urgency_keyword_v1",
+      "type": "keyword",
+      "target": "hint",
+      "hint_type": "urgency_marker",
+      "keywords": ["urgente", "hoje", "agora", "rápido", "rapido", "já", "ja", "imediatamente"],
+      "confidence_level": 0.80
+    },
+    {
+      "id": "competitor_phrase_set_v1",
+      "type": "phrase_set",
+      "target": "hint",
+      "hint_type": "competitor_mention",
+      "phrases": ["outro lugar", "mais barato em", "vi mais barato", "na concorrência", "na concorrencia"],
+      "confidence_level": 0.90
+    },
+    {
+      "id": "positive_marker_keyword_v1",
+      "type": "keyword",
+      "target": "hint",
+      "hint_type": "positive_marker",
+      "keywords": ["fechar", "comprar", "quero", "vou querer", "pode ser", "tá bom", "ta bom", "ok", "beleza"],
+      "confidence_level": 0.75
+    },
+    {
+      "id": "abandonment_repetition_v1",
+      "type": "regex",
+      "target": "hint",
+      "hint_type": "abandonment_marker",
+      "patterns": ["\\?\\?+", "(\\?\\s*){2,}", "(\\.{3,}|…){1,}"],
+      "confidence_level": 0.70
+    },
+    {
+      "id": "price_quoted_regex_v1",
+      "type": "regex",
+      "target": "fact",
+      "fact_key": "price_quoted",
+      "patterns": ["(?:R\\$\\s?|reais?\\s)?(\\d{1,3}(?:[.,]\\d{3})*(?:[.,]\\d{2})?)"],
+      "confidence_level": 0.90
+    }
+  ]
+}

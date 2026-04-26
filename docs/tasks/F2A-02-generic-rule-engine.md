@@ -209,3 +209,71 @@ Classificacoes ficam para F2A-03.
 - hints usam constraint de idempotencia.
 - hints e facts carregam `ruleset_hash`.
 - `scenarios.json` nao e usado pelo engine.
+
+---
+
+## Entrega F2A-02
+
+### Arquivos alterados
+- `db/migrations/0010_analytics_ruleset_auditability.sql` (criado)
+- `src/enrichment/rules.types.ts` (criado)
+- `src/enrichment/rules.loader.ts` (criado)
+- `src/enrichment/rules.engine.ts` (criado)
+- `src/enrichment/hints.repository.ts` (criado)
+- `src/enrichment/facts.repository.ts` (criado)
+- `src/enrichment/index.ts` (modificado — exports dos novos modulos)
+- `segments/routing.json` (criado)
+- `segments/generic/rules.json` (criado)
+- `segments/generic/lexicon.json` (criado)
+- `segments/generic/scenarios.json` (criado)
+- `segments/generic/README.md` (criado)
+- `segments/_template/rules.json` (criado)
+- `segments/_template/lexicon.json` (criado)
+- `segments/_template/scenarios.json` (criado)
+- `segments/_template/README.md` (criado)
+- `tests/unit/enrichment/rules.loader.test.ts` (criado)
+- `tests/unit/enrichment/rules.engine.test.ts` (criado)
+- `tests/unit/enrichment/hints.repository.test.ts` (criado)
+- `tests/unit/enrichment/facts.repository.test.ts` (criado)
+- `docs/tasks/F2A-02-generic-rule-engine.md` (modificado — registro de entrega)
+
+### Checklist
+- [x] Migration 0010 criada: `ruleset_hash` em `analytics.linguistic_hints` e `analytics.conversation_facts`; UNIQUE `hints_dedup_key` em hints; deduplicacao preventiva de hints existentes.
+- [x] `src/enrichment/rules.types.ts`: schemas Zod para routing, ruleset, lexicon, scenarios, rule types (keyword, regex, phrase_set), hint e fact outputs.
+- [x] Schemas rejeitam regex invalido, regex `hint` sem `hint_type`, regex `fact` sem `fact_key` e ids duplicados de regra.
+- [x] `src/enrichment/rules.loader.ts`: carrega routing, resolve segmento por `environment + account_id + inbox_id`, carrega ruleset/lexicon, calcula `ruleset_hash` por SHA-256 dos bytes brutos de `rules.json` + newline + `lexicon.json`.
+- [x] Loader valida consistencia entre nome do segmento carregado, `ruleset.segment` e `lexicon.locale`.
+- [x] `src/enrichment/rules.engine.ts`: aplica keyword (substring case-insensitive), regex (match com grupos), phrase_set (substring case-insensitive) sobre mensagens; retorna hints e facts com provenance completa.
+- [x] `src/enrichment/hints.repository.ts`: INSERT em `analytics.linguistic_hints` com `ON CONFLICT ON CONSTRAINT hints_dedup_key DO NOTHING`.
+- [x] `src/enrichment/facts.repository.ts`: INSERT em `analytics.conversation_facts` com `ON CONFLICT DO UPDATE` no UNIQUE existente.
+- [x] `segments/generic/`: rules.json com regras neutras (price_complaint, urgency_marker, competitor_mention, positive_marker, abandonment_marker, price_quoted); lexicon.json com stopwords pt-BR; scenarios.json com exemplos; README.md.
+- [x] `segments/_template/`: estrutura minima valida, sem regra de negocio real.
+- [x] `segments/routing.json`: roteamento por environment + account_id, inbox_id opcional, fallback para defaultSegment.
+- [x] Testes unitarios cobrem: loader (validacao, hash, roteamento), engine (keyword, regex, phrase_set, null content, template vazio, troca de ruleset), repositories (INSERT, idempotencia, provenance, ausencia de escrita em raw/core).
+- [x] `npm run typecheck` verde.
+- [x] `npm test` 170/170 verde (30 arquivos).
+- [x] `npm run build` verde.
+
+### Pendencias
+- Validacao Supabase real nao executada: DATABASE_URL nao disponivel nesta sessao.
+- A migration 0010 deve ser aplicada manualmente no banco antes de usar os repositories em producao.
+
+### Auditoria Codex
+- Escopo aprovado: nao criou regras de pneu, nao alterou normalizacao e manteve escrita limitada a `analytics.*`.
+- Ajuste aplicado: migration 0010 ficou mais segura para reaplicacao; `hints_dedup_key` so e criada se ainda nao existir.
+- Ajuste aplicado: `pattern_id` em `analytics.linguistic_hints` passa a ser obrigatorio com sentinela `unknown_pattern` para linhas antigas sem valor. Isso evita duplicata silenciosa por NULL em chave UNIQUE.
+- Ajuste aplicado: `chatwoot_inbox_id` no routing e realmente opcional; `chatwoot_account_id` e `chatwoot_inbox_id` exigem inteiros positivos.
+- Ajuste aplicado: ruleset rejeita regex invalido antes do runtime e impede combinacoes incompletas (`hint` sem `hint_type`, `fact` sem `fact_key`).
+- Ajuste aplicado: ruleset rejeita ids duplicados de regra.
+- Ajuste aplicado: loader rejeita segmento com nome ou locale divergente entre `rules.json` e `lexicon.json`.
+
+### Riscos
+- `scenarios.json` nao e carregado pelo motor em runtime (por design), mas nao ha validacao automatica de que as regras cobrem os cenarios declarados. Isso e intencional: cenarios sao fixture/documentacao.
+- O hash SHA-256 e calculado a partir dos bytes brutos em disco. Se o arquivo for editado e salvo com encoding diferente (ex: BOM UTF-8), o hash mudara mesmo que o conteudo JSON seja identico. Isso e aceitavel porque reflete a realidade do arquivo em disco.
+- `insertHints` e `insertFacts` usam loop serial de inserts. Para volumes muito grandes (>1000 hints por conversa), pode ser lento. Otimizacao em batch pode ser feita em task futura se necessario.
+
+### Validacao executada
+- `npm run typecheck` -> verde
+- `npm test` -> 30 arquivos, 170 testes, todos passaram
+- `npm run build` -> verde
+- Supabase real -> nao executado (DATABASE_URL nao disponivel nesta sessao)

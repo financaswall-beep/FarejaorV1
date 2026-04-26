@@ -157,7 +157,7 @@ Pendente da F1.5:
   - [x] Guia de implementacao para Kimi documentado.
   - [x] Prompt F2A-01 criado.
   - [x] F2A-01: `conversation_signals` genericos implementado, auditado e publicado.
-  - [ ] F2A-02: motor generico de regras declarativas, routing, `_template` e UNIQUE de hints.
+  - [x] F2A-02: motor generico de regras declarativas, routing, `_template` e UNIQUE de hints.
   - [ ] F2A-03: classificacoes deterministicas genericas.
   - [ ] F2A-04: fronteira do fork e tag `farejador-base-v1`.
   - [ ] F2A-05: pacote `segments/tires` somente depois da tag.

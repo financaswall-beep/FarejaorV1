@@ -1,0 +1,17 @@
+{
+  "defaultSegment": "generic",
+  "routes": [
+    {
+      "environment": "prod",
+      "chatwoot_account_id": 1,
+      "chatwoot_inbox_id": null,
+      "segment": "generic"
+    },
+    {
+      "environment": "test",
+      "chatwoot_account_id": 1,
+      "chatwoot_inbox_id": null,
+      "segment": "generic"
+    }
+  ]
+}

@@ -20,12 +20,12 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 - F1-03 admin endpoints: concluida, auditada, corrigida e validada com Chatwoot/Supabase reais.
 - F1.5 hardening pre-producao plena: aplicado e publicado.
 - Fase 1 tecnica: concluida. Estado atual: shadow mode controlado antes de producao plena.
-- Fase 2a: iniciada. F2A-01 `conversation_signals` concluida, auditada e publicada.
-- Proxima entrega: F2A-02 motor generico de regras declarativas.
+- Fase 2a: iniciada. F2A-01 e F2A-02 concluidas, auditadas e publicadas.
+- Proxima entrega: F2A-03 classificacoes deterministicas genericas.
 
 Validacao atual:
 
-- `npm test`: 133/133.
+- `npm test`: 170/170.
 - `npm run typecheck`: verde.
 - `npm run build`: verde.
 - Webhook real, replay real, reconcile real e dois workers concorrentes ja foram validados.
@@ -83,6 +83,8 @@ Validacao atual:
 - O primeiro pacote de segmento de pneus so deve nascer depois da fronteira do fork.
 - A fronteira do fork acontece ao fim da F2A-03, quando signals, regras e classificacoes genericas existirem sem regras de pneus.
 - F2A-01 adicionou o CLI `npm run enrich -- --conversation-id=<uuid> --segment=generic`; nesta entrega, `--segment` e aceito e ignorado com log claro.
+- F2A-02 criou `segments/generic`, `segments/_template`, `segments/routing.json`, loader/engine de regras e repositories de `analytics.linguistic_hints` e `analytics.conversation_facts`.
+- A migration `0010_analytics_ruleset_auditability.sql` adiciona `ruleset_hash` e idempotencia de hints; precisa ser aplicada no Supabase antes de usar hints/facts em producao.
 
 ## Stack
 

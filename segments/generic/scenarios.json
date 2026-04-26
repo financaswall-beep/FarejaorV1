@@ -1,0 +1,32 @@
+{
+  "scenarios": [
+    {
+      "name": "Cliente reclama de preço",
+      "messages": [
+        { "sender_type": "contact", "content": "Tá muito caro, vi mais barato em outro lugar" }
+      ],
+      "expected_hints": ["price_complaint", "competitor_mention"]
+    },
+    {
+      "name": "Cliente demonstra urgência",
+      "messages": [
+        { "sender_type": "contact", "content": "Preciso hoje, é urgente" }
+      ],
+      "expected_hints": ["urgency_marker"]
+    },
+    {
+      "name": "Cliente sinaliza fechamento",
+      "messages": [
+        { "sender_type": "contact", "content": "Pode ser, vou querer fechar" }
+      ],
+      "expected_hints": ["positive_marker"]
+    },
+    {
+      "name": "Cliente abandona com interrogações",
+      "messages": [
+        { "sender_type": "contact", "content": "?????" }
+      ],
+      "expected_hints": ["abandonment_marker"]
+    }
+  ]
+}
