@@ -114,3 +114,50 @@ npm run build
 
 Supabase real e opcional nesta task. Se nao for executado, registrar como pendencia.
 
+---
+
+## Entrega F2A-01
+
+### Arquivos alterados
+- `src/enrichment/signals.service.ts` (criado)
+- `src/enrichment/signals.repository.ts` (criado)
+- `src/enrichment/cli.ts` (criado)
+- `src/enrichment/index.ts` (criado)
+- `tests/unit/enrichment/signals.service.test.ts` (criado)
+- `tests/unit/enrichment/signals.repository.test.ts` (criado)
+- `tests/unit/enrichment/enrichment.cli.test.ts` (criado)
+- `package.json` (modificado - adicionado script `enrich`)
+- `docs/tasks/F2A-01-conversation-signals.md` (modificado - registro de entrega e auditoria)
+
+### Checklist
+- [x] `src/enrichment/signals.service.ts` delega calculo ao repository.
+- [x] `src/enrichment/signals.repository.ts` calcula todas as 13 metricas via SQL CTEs e faz upsert em `analytics.conversation_signals`.
+- [x] Provenance obrigatoria: `source=sql_aggregation_v1`, `truth_type=observed`, `confidence_level=1.00`, `extractor_version=f2a_signals_v1`.
+- [x] CLI aceita `--conversation-id=<uuid>` e opcional `--segment=generic` (ignorado com log).
+- [x] CLI usa `env.FAREJADOR_ENV` centralizado, sem default local paralelo.
+- [x] CLI fecha o pool no caminho de execucao direta.
+- [x] CLI falha explicitamente quando a conversa nao existe no ambiente selecionado.
+- [x] Script `npm run enrich` adicionado ao `package.json`.
+- [x] Testes unitarios cobrem: parametros, metricas, provenance, leitura somente de core, ausencia de INSERT/UPDATE em raw/core, idempotencia via ON CONFLICT, CLI parseArgs e runCli.
+- [x] `npm run typecheck` verde.
+- [x] `npm test` 133/133 passaram.
+- [x] `npm run build` verde.
+
+### Pendencias
+- Validacao Supabase real nao executada: DATABASE_URL nao disponivel nesta sessao.
+
+### Auditoria Codex
+- Escopo aprovado: a entrega ficou limitada a F2A-01, sem criar `segments/`, sem alterar migrations antigas e sem tocar em `raw.*` ou `core.*`.
+- Ajuste aplicado: `computeAndUpsertSignals` agora retorna `false` quando nenhuma conversa e encontrada, evitando falso positivo no CLI.
+- Ajuste aplicado: `runCli` usa `env.FAREJADOR_ENV`, fecha `pool.end()` ao rodar como script e usa deteccao de execucao direta compativel com Windows.
+- Ajuste aplicado: testes cobrem conversa inexistente no ambiente selecionado.
+
+### Riscos
+- `avg_agent_response_sec` usa LATERAL para encontrar mensagem do contact imediatamente anterior a cada resposta do agente. Em conversas com muitas mensagens (>10k) pode ser custoso; se observado, deve ser otimizado com window functions em task futura.
+- `media_text_ratio` retorna NULL quando `total_messages = 0`; comportamento valido segundo regra "retornar NULL em vez de inventar".
+
+### Validacao executada
+- `npm run typecheck` -> verde
+- `npm test` -> 26 arquivos, 133 testes, todos passaram
+- `npm run build` -> verde
+- Supabase real -> nao executado (DATABASE_URL nao disponivel nesta sessao)

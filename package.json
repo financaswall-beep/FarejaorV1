@@ -14,7 +14,8 @@
     "start": "node dist/app/server.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "enrich": "tsx --env-file=.env src/enrichment/cli.ts"
   },
   "dependencies": {
     "fastify": "^4.28.0",
