@@ -1,6 +1,6 @@
 # Checklist Master - Farejador
 
-Atualizado: 25/04/2026
+Atualizado: 26/04/2026
 
 Legenda: feito, em andamento, proximo, futuro.
 
@@ -160,7 +160,7 @@ Pendente da F1.5:
   - [x] F2A-02: motor generico de regras declarativas, routing, `_template` e UNIQUE de hints.
   - [x] Auditoria pos-F2A-02: migration `0011` relaxa CHECK de `hint_type`; `SIGNAL_TIMEZONE` parametrizado; `SEGMENTS_BASE` via `import.meta.url`.
   - [x] F2A-03: classificacoes deterministicas genericas.
-  - [ ] F2A-04: fronteira do fork e tag `farejador-base-v1`.
+  - [x] F2A-04: fronteira do fork — checklist tecnico verde (typecheck/test 192/192/build, sem `segments/tires`, sem vocabulario de pneu em `src/enrichment`, `generic` + `_template` presentes, migrations 0011/0012 aplicadas, `SIGNAL_TIMEZONE` documentado, `rules.loader` via `import.meta.url`). Tag `farejador-base-v1` aguardando checklist operacional (shadow contínuo, secrets rotation, `DATABASE_CA_CERT`, harness integração).
   - [ ] F2A-05: pacote `segments/tires` somente depois da tag.
 - [ ] Fase 2b: enrichment com LLM escrevendo somente em `analytics.*`.
 - [ ] Fase 3: agente conversacional separado, read-only sobre Farejador.

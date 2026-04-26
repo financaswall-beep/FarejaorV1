@@ -18,19 +18,21 @@ Depois de F2A-03:
 
 ## Checklist tecnico antes da tag
 
-- [ ] `npm run typecheck` verde.
-- [ ] `npm test` verde.
-- [ ] `npm run build` verde.
-- [ ] `npm run enrich -- --conversation-id=<uuid> --segment=generic` validado quando houver DATABASE_URL.
-- [ ] `docs/BASE_FORK_POINT.md` atualizado.
-- [ ] `docs/HANDOFF.md` atualizado.
-- [ ] `docs/CHECKLIST.md` atualizado.
-- [ ] Confirmado que nao existe `segments/tires`.
-- [ ] Confirmado que `src/enrichment/*` nao tem palavras de pneus hardcoded.
-- [ ] Confirmado que ha pelo menos dois segmentos de prova: `generic` e `_template`.
-- [ ] Migration `0011_relax_hint_type_check.sql` aplicada (CHECK fechado removido para extensibilidade por segmento).
-- [ ] `SIGNAL_TIMEZONE` documentado em `docs/CONFIG.md` e default coerente com a operacao atual.
-- [ ] `src/enrichment/rules.loader.ts` resolve `segments/` via `import.meta.url` (sem dependencia de `process.cwd()`).
+Verificado em 26/04/2026:
+
+- [x] `npm run typecheck` verde.
+- [x] `npm test` verde (192/192, 32 arquivos).
+- [x] `npm run build` verde.
+- [x] `npm run enrich -- --conversation-id=<uuid> --segment=generic` validado em sessao F2A-03 contra Supabase real (`7c3918a7-ebc3-4630-a072-9fe6187150ea`).
+- [x] `docs/BASE_FORK_POINT.md` atualizado.
+- [x] `docs/HANDOFF.md` atualizado.
+- [x] `docs/CHECKLIST.md` atualizado.
+- [x] Confirmado que nao existe `segments/tires` (`ls segments/` retorna apenas `_template`, `generic`, `routing.json`).
+- [x] Confirmado que `src/enrichment/*` nao tem palavras de pneus hardcoded (grep por `pneu|tire|aro|pirelli|goodyear|maggion|montagem|alinhamento|balanceamento` = sem match).
+- [x] Confirmado que ha pelo menos dois segmentos de prova: `generic` e `_template`.
+- [x] Migration `0011_relax_hint_type_check.sql` aplicada (CHECK fechado removido para extensibilidade por segmento).
+- [x] `SIGNAL_TIMEZONE` documentado em `docs/CONFIG.md` e default coerente com a operacao atual.
+- [x] `src/enrichment/rules.loader.ts` resolve `segments/` via `import.meta.url` (sem dependencia de `process.cwd()`).
 - [ ] Wallace aprovou criar tag.
 
 ## Checklist operacional antes da tag final

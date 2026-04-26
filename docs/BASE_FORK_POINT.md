@@ -1,6 +1,6 @@
 # Ponto de bifurcacao do Farejador Base
 
-Atualizado: 25/04/2026
+Atualizado: 26/04/2026
 
 ## Objetivo
 
@@ -16,13 +16,17 @@ ser reaproveitado em outros segmentos, como:
 
 ## Veredito curto
 
-Nao bifurcar agora.
+Codigo pronto para tag `farejador-base-v1`. Tag aguardando checklist operacional.
 
-O melhor ponto para bifurcar continua sendo depois de:
+Esqueleto generico da Fase 2a esta completo (F2A-01/02/03). Regras especificas de pneus
+ainda nao foram criadas — `segments/tires` so depois da tag (F2A-05).
 
-1. Fase 1 tecnica concluida e ressalvas de producao plena controladas.
-2. Esqueleto generico da Fase 2a criado.
-3. Regras especificas de pneus isoladas em pacote/configuracao de segmento.
+Pendencias antes de criar a tag:
+
+1. Shadow mode real rodado por periodo combinado sem fila travada.
+2. Secrets rotacionados antes de producao plena.
+3. `DATABASE_CA_CERT` configurado no Coolify.
+4. Harness de integracao automatizado com Postgres real (ou decisao documentada).
 
 Nome sugerido para a tag/base:
 
@@ -49,13 +53,13 @@ farejador-base-v1
 
 - [x] Arquitetura F2a documentada.
 - [x] Prompt F2A-01 criado para Kimi.
-- [ ] Worker/servico generico de enrichment deterministico.
-- [ ] Estrutura de regras declarativas por segmento.
-- [ ] Roteamento de segmento por `environment + chatwoot_account_id`.
-- [ ] Classificacoes deterministicas genericas.
-- [ ] Escrita somente em `analytics.*`.
-- [ ] Nenhuma regra de pneu hardcoded no nucleo.
-- [ ] Teste provando que um segmento pode ser trocado sem mexer em `raw.*` ou `core.*`.
+- [x] Worker/servico generico de enrichment deterministico (F2A-01 + CLI `npm run enrich`).
+- [x] Estrutura de regras declarativas por segmento (`segments/generic`, `segments/_template`).
+- [x] Roteamento de segmento por `environment + chatwoot_account_id` (`segments/routing.json`).
+- [x] Classificacoes deterministicas genericas (F2A-03, dimensoes urgency/buyer_intent/stage_reached/loss_reason/final_outcome).
+- [x] Escrita somente em `analytics.*` (signals, hints, facts, classifications).
+- [x] Nenhuma regra de pneu hardcoded no nucleo (verificado por grep em `src/enrichment` em 26/04/2026).
+- [x] Teste provando que um segmento pode ser trocado sem mexer em `raw.*` ou `core.*` (`segments/_template` carregavel via `loadSegment`).
 
 ## O que deve ficar no nucleo base
 

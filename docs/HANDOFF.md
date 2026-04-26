@@ -1,6 +1,6 @@
 # Handoff - Projeto Farejador
 
-Atualizado: 25/04/2026
+Atualizado: 26/04/2026
 
 ## Resumo
 
@@ -40,7 +40,9 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | Shadow mode Chatwoot real | Em andamento como ressalva operacional antes de producao plena |
 | F2A-01 conversation signals | Concluida, auditada e publicada |
 | F2A-02 motor generico de regras | Concluida, auditada e validada no Supabase |
-| Fase 2a proxima entrega | F2A-03 classificacoes deterministicas genericas |
+| F2A-03 classificacoes genericas | Concluida, auditada (bug do constraint corrigido) e validada no Supabase |
+| F2A-04 fronteira do fork | Checklist tecnico verde; tag `farejador-base-v1` aguardando checklist operacional |
+| Fase 2a proxima entrega | Aplicar tag `farejador-base-v1` apos pendencias operacionais; depois F2A-05 (`segments/tires`) |
 
 ## F1-01 - entregue
 
@@ -107,12 +109,26 @@ Entrega concluida:
 - Supabase real: migration `0010_analytics_ruleset_auditability.sql` aplicada e validada.
 - Validado no banco: `ruleset_hash` em hints/facts, `pattern_id NOT NULL`, constraint `hints_dedup_key`, 0 `pattern_id` nulo e dedup de hints via `ON CONFLICT`.
 
-Proxima entrega recomendada:
+Entrega concluida:
 
 - F2A-03 classificacoes deterministicas genericas.
-- Usar `docs/tasks/F2A-03-generic-classifications.md`.
-- Ainda nao criar regras de pneu.
-- Ainda nao criar tag/fork; a fronteira vem somente depois da F2A-03.
+- Codigo publicado no commit `ea507d1` (com correcao do constraint antigo).
+- Migration `0012_classification_ruleset_auditability.sql` aplicada no Supabase.
+- Validacao local: `npm run typecheck`, `npm test` 192/192 e `npm run build`.
+- Validacao Supabase: idempotencia confirmada (mesma classificacao = no-op; ruleset_hash diferente = nova linha).
+- Task detalhada e auditoria em `docs/tasks/F2A-03-generic-classifications.md`.
+
+Entrega concluida (apenas tecnica):
+
+- F2A-04 fronteira do fork — checklist tecnico verde em 26/04/2026.
+- Validado: typecheck/test/build verdes; sem `segments/tires`; sem vocabulario de pneu em `src/enrichment`; segmentos `generic` e `_template` presentes; migrations 0011/0012 aplicadas; `SIGNAL_TIMEZONE` documentado; `rules.loader` resolve via `import.meta.url`.
+- Tag `farejador-base-v1` aguardando checklist operacional (ver pendencias abaixo).
+
+Proxima entrega recomendada:
+
+- Concluir checklist operacional do `docs/BASE_FORK_POINT.md`.
+- Aplicar tag `farejador-base-v1` apos aprovacao do Wallace.
+- Somente depois da tag iniciar F2A-05 (`segments/tires`).
 
 Fronteira do fork:
 
