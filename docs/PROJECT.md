@@ -84,7 +84,7 @@ Validacao atual:
 - A fronteira do fork acontece ao fim da F2A-03, quando signals, regras e classificacoes genericas existirem sem regras de pneus.
 - F2A-01 adicionou o CLI `npm run enrich -- --conversation-id=<uuid> --segment=generic`; nesta entrega, `--segment` e aceito e ignorado com log claro.
 - F2A-02 criou `segments/generic`, `segments/_template`, `segments/routing.json`, loader/engine de regras e repositories de `analytics.linguistic_hints` e `analytics.conversation_facts`.
-- A migration `0010_analytics_ruleset_auditability.sql` adiciona `ruleset_hash` e idempotencia de hints; precisa ser aplicada no Supabase antes de usar hints/facts em producao.
+- A migration `0010_analytics_ruleset_auditability.sql` adiciona `ruleset_hash` e idempotencia de hints; foi aplicada e validada no Supabase real.
 
 ## Stack
 

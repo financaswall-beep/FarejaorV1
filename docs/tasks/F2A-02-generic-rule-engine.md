@@ -255,8 +255,8 @@ Classificacoes ficam para F2A-03.
 - [x] `npm run build` verde.
 
 ### Pendencias
-- Validacao Supabase real nao executada: DATABASE_URL nao disponivel nesta sessao.
-- A migration 0010 deve ser aplicada manualmente no banco antes de usar os repositories em producao.
+- Nenhuma pendencia tecnica da F2A-02.
+- Continuam pendentes apenas as ressalvas operacionais globais antes de producao plena: shadow mode, rotacao de secrets, `DATABASE_CA_CERT` e harness de integracao automatizado.
 
 ### Auditoria Codex
 - Escopo aprovado: nao criou regras de pneu, nao alterou normalizacao e manteve escrita limitada a `analytics.*`.
@@ -276,4 +276,11 @@ Classificacoes ficam para F2A-03.
 - `npm run typecheck` -> verde
 - `npm test` -> 30 arquivos, 170 testes, todos passaram
 - `npm run build` -> verde
-- Supabase real -> nao executado (DATABASE_URL nao disponivel nesta sessao)
+- Supabase real -> migration 0010 aplicada e validada:
+  - `analytics.linguistic_hints.ruleset_hash` existe, `NOT NULL`, default `pre_audit_v1`;
+  - `analytics.conversation_facts.ruleset_hash` existe, `NOT NULL`, default `pre_audit_v1`;
+  - `analytics.linguistic_hints.pattern_id` esta `NOT NULL`, default `unknown_pattern`;
+  - constraint `hints_dedup_key` existe;
+  - `pattern_id IS NULL` retornou 0 linhas;
+  - insert de hint duplicado com `ON CONFLICT ON CONSTRAINT hints_dedup_key DO NOTHING` retornou primeira insercao 1 e duplicata 0 dentro de transacao com rollback;
+  - insert de fact com `ruleset_hash` tambem validado dentro de transacao com rollback.

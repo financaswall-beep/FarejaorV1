@@ -39,7 +39,7 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | Fase 1 tecnica | Concluida |
 | Shadow mode Chatwoot real | Em andamento como ressalva operacional antes de producao plena |
 | F2A-01 conversation signals | Concluida, auditada e publicada |
-| F2A-02 motor generico de regras | Concluida, auditada e aguardando aplicacao da migration 0010 no Supabase |
+| F2A-02 motor generico de regras | Concluida, auditada e validada no Supabase |
 | Fase 2a proxima entrega | F2A-03 classificacoes deterministicas genericas |
 
 ## F1-01 - entregue
@@ -104,7 +104,8 @@ Entrega concluida:
 - Usar `docs/tasks/F2A-02-generic-rule-engine.md`.
 - Nao criar regras de pneu ainda.
 - Validacao local: `npm run typecheck`, `npm test` 170/170 e `npm run build`.
-- Pendencia operacional: aplicar `db/migrations/0010_analytics_ruleset_auditability.sql` no Supabase antes de usar repositories de hints/facts em producao.
+- Supabase real: migration `0010_analytics_ruleset_auditability.sql` aplicada e validada.
+- Validado no banco: `ruleset_hash` em hints/facts, `pattern_id NOT NULL`, constraint `hints_dedup_key`, 0 `pattern_id` nulo e dedup de hints via `ON CONFLICT`.
 
 Proxima entrega recomendada:
 

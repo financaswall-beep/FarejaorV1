@@ -92,7 +92,7 @@ Auditoria aplicada:
 
 ### F2A-02 - Motor generico de regras declarativas
 
-Status: concluida, auditada e aguardando aplicacao da migration 0010 no Supabase antes de uso em producao.
+Status: concluida, auditada e validada no Supabase real.
 
 Criar estrutura para regras por segmento, sem escrever regras de pneu.
 
@@ -117,6 +117,7 @@ Auditoria aplicada:
 - loader valida consistencia de segmento e locale;
 - migration 0010 evita duplicata por `pattern_id` nulo e cria `hints_dedup_key` de forma segura para reaplicacao;
 - validacao final: `npm run typecheck`, `npm test` 170/170 e `npm run build`.
+- Supabase real: migration 0010 aplicada; `hints_dedup_key` validada; teste de insert/duplicata em `analytics.linguistic_hints` executado em transacao com rollback.
 
 Estrutura minima de cada segmento:
 
