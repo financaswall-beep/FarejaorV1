@@ -11,7 +11,9 @@ function buildSslConfig(databaseUrl: string): object | undefined {
 
   if (env.DATABASE_CA_CERT) {
     // CA explícito via env — rejectUnauthorized:true valida o certificado.
-    return { rejectUnauthorized: true, ca: env.DATABASE_CA_CERT };
+    // Suporta \n literal (necessário quando o cert é armazenado em linha única no Coolify).
+    const ca = env.DATABASE_CA_CERT.replace(/\\n/g, '\n');
+    return { rejectUnauthorized: true, ca };
   }
 
   // Sem CA configurado: aceita a criptografia mas não valida o certificado.
