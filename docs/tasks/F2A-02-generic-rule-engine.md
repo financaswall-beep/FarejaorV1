@@ -14,7 +14,7 @@ genericas da F2A-03.
 - Criar schema Zod para validar ruleset, lexicon, scenarios e routing.
 - Criar `segments/generic/` com exemplos neutros.
 - Criar `segments/_template/` como segundo segmento de prova.
-- Criar `segments/routing.json` com roteamento por `environment + chatwoot_account_id`.
+- Criar `segments/routing.json` com roteamento por `environment + chatwoot_account_id` e `chatwoot_inbox_id` opcional.
 - Aplicar regras sobre mensagens de uma conversa.
 - Gerar objetos prontos para `analytics.linguistic_hints` e
   `analytics.conversation_facts`.
@@ -23,7 +23,7 @@ genericas da F2A-03.
 
 ## Arquivos que pode criar/alterar
 
-- `db/migrations/0010_linguistic_hints_idempotency.sql`
+- `db/migrations/0010_analytics_ruleset_auditability.sql`
 - `src/enrichment/rules.loader.ts`
 - `src/enrichment/rules.engine.ts`
 - `src/enrichment/rules.types.ts`
@@ -85,6 +85,7 @@ Formato:
     {
       "environment": "prod",
       "chatwoot_account_id": 1,
+      "chatwoot_inbox_id": null,
       "segment": "generic"
     }
   ]
@@ -94,23 +95,38 @@ Formato:
 Regras:
 
 - lookup por `environment + chatwoot_account_id`;
+- se `chatwoot_inbox_id` estiver preenchido, a rota deve bater tambem por inbox;
+- se `chatwoot_inbox_id` for `null` ou ausente, a rota vale para a conta inteira;
 - fallback para `defaultSegment`;
 - validar com Zod;
 - nao decidir segmento por texto.
 
 ## Migration obrigatoria
 
-Criar migration nova, sem alterar migrations antigas, para idempotencia de
-`analytics.linguistic_hints`.
+Criar migration nova, sem alterar migrations antigas, para idempotencia e auditoria
+de `analytics.linguistic_hints`.
+
+Adicionar coluna:
+
+```text
+ruleset_hash TEXT NOT NULL
+```
+
+O hash deve ser `sha256(rules.json + lexicon.json)` com serializacao deterministica.
 
 Chave sugerida:
 
 ```text
-(environment, conversation_id, message_id, hint_type, pattern_id, source, extractor_version)
+(environment, conversation_id, message_id, hint_type, pattern_id, source, extractor_version, ruleset_hash)
 ```
 
 Repository deve usar `ON CONFLICT DO NOTHING` ou `ON CONFLICT ... DO UPDATE` quando
 fizer sentido.
+
+Para `analytics.conversation_facts`, se a migration atual nao tiver `ruleset_hash`,
+esta task deve criar migration nova adicionando a coluna opcional ou obrigatoria
+com backfill seguro. Nao alterar migration antiga. O objetivo e que facts gerados
+por regras tambem sejam auditaveis pelo conteudo exato do ruleset.
 
 ## Regras permitidas antes do fork
 
@@ -155,11 +171,13 @@ Classificacoes ficam para F2A-03.
 
 - loader valida `locale`;
 - loader rejeita ruleset sem `extractor_version`;
+- loader calcula `ruleset_hash`;
 - routing escolhe segmento por `environment + chatwoot_account_id`;
+- routing usa `chatwoot_inbox_id` quando informado;
 - routing usa `defaultSegment` quando nao ha match;
 - engine aplica regra generica;
 - `_template` carrega sem regra real;
 - trocar ruleset muda resultado sem mexer no motor;
 - repositories escrevem somente em `analytics.*`;
 - hints usam constraint de idempotencia.
-
+- hints e facts carregam `ruleset_hash`.

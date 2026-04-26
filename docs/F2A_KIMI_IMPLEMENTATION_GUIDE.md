@@ -137,7 +137,12 @@ Proibido antes do fork:
 ## Roteamento de segmento
 
 O segmento deve ser escolhido por `segments/routing.json`, usando
-`environment + chatwoot_account_id`.
+`environment + chatwoot_account_id` e, quando existir, `chatwoot_inbox_id`.
+
+`chatwoot_inbox_id` e opcional:
+
+- preenchido: a rota vale so para aquela inbox;
+- ausente ou `null`: a rota vale para a conta inteira.
 
 Nao escolher segmento analisando o texto da conversa.
 
@@ -147,7 +152,7 @@ Antes da tag `farejador-base-v1`, a conta real deve continuar apontando para
 ## Ordem das tarefas F2a
 
 1. F2A-01 - signals + CLI minimo.
-2. F2A-02 - regras genericas + routing + `_template` + UNIQUE de hints.
+2. F2A-02 - regras genericas + routing + `_template` + UNIQUE de hints + `ruleset_hash`.
 3. F2A-03 - classificacoes genericas.
 4. F2A-04 - fronteira do fork.
 5. F2A-05 - pacote pneus, somente depois da tag/base.

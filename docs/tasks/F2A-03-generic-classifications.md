@@ -21,6 +21,11 @@ Criar classificacoes deterministicas a partir de signals, hints e facts:
 As regras devem ser genericas e reaproveitaveis em pneus, imobiliaria, material de
 construcao, autopecas, clinicas e servicos locais.
 
+Importante: classificacoes genericas tem cobertura limitada ate existir um pacote
+de segmento. `loss_reason=delivery` e `loss_reason=stock` so devem ser gravados
+quando houver evidencia generica clara. Se a evidencia depender de vocabulario de
+pneu, imobiliaria ou outro segmento, nao gravar nesta task.
+
 ## Arquivos que pode criar/alterar
 
 - `src/enrichment/classification.service.ts`
@@ -97,6 +102,9 @@ classificacao.
 Nao gravar `unknown` se isso apenas significar falta de evidencia. Preferir nao
 gravar linha.
 
+Nota: `delivery` e `stock` sao valores genericos, mas a cobertura inicial pode ser
+baixa antes dos segmentos adicionarem vocabulario proprio. Isso e esperado.
+
 ## Testes obrigatorios
 
 - nao classifica sem evidencia;
@@ -105,4 +113,3 @@ gravar linha.
 - detecta sinal de compra como `buyer_intent=high`;
 - idempotencia por `(environment, conversation_id, dimension, source, extractor_version)`;
 - SQL nao escreve em `raw.*` nem `core.*`.
-

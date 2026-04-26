@@ -168,6 +168,7 @@ Formato inicial:
     {
       "environment": "prod",
       "chatwoot_account_id": 1,
+      "chatwoot_inbox_id": null,
       "segment": "generic"
     }
   ]
@@ -177,6 +178,7 @@ Formato inicial:
 Regras:
 
 - roteamento por `environment + chatwoot_account_id`;
+- `chatwoot_inbox_id` opcional para diferenciar inboxes dentro da mesma conta;
 - se nao encontrar rota, usar `defaultSegment`;
 - na F2A-05 trocar a rota da conta real para `tires`, depois da tag base;
 - nao decidir segmento por texto da conversa.
@@ -236,4 +238,3 @@ caso ainda estejam abertas:
 - Zod permissivo nos mappers criticos;
 - limpeza do caminho legado de body;
 - limpeza dos stubs orfaos de teste em `environment=test`.
-

@@ -81,6 +81,7 @@ Formato:
     {
       "environment": "prod",
       "chatwoot_account_id": 1,
+      "chatwoot_inbox_id": null,
       "segment": "generic"
     }
   ]
@@ -90,6 +91,8 @@ Formato:
 Regras:
 
 - lookup por `environment + chatwoot_account_id`;
+- `chatwoot_inbox_id` e opcional; quando preenchido, a rota fica especifica para
+  uma inbox dentro da conta;
 - fallback para `defaultSegment`;
 - validar com Zod;
 - `locale` vem do segmento carregado, nao do roteamento;
@@ -117,6 +120,25 @@ segments/routing.json
 
 `generic` deve conter regras neutras e executaveis. `_template` deve conter
 estrutura minima validada, sem regra de negocio real.
+
+## Hash do ruleset
+
+F2A-02 deve calcular um hash deterministico do pacote de regras carregado:
+
+```text
+ruleset_hash = sha256(rules.json + lexicon.json)
+```
+
+Uso:
+
+- gravar em `analytics.linguistic_hints`;
+- gravar em `analytics.conversation_facts`;
+- incluir na chave de idempotencia quando a migration permitir;
+- permitir auditoria: mesmo `extractor_version` com arquivo de regra alterado fica
+  rastreavel.
+
+`extractor_version` identifica a familia/versao logica do extrator. `ruleset_hash`
+identifica o conteudo exato das regras em disco.
 
 ## Modulos propostos
 
@@ -218,6 +240,7 @@ Fonte esperada:
 source = deterministic_rules_v1
 truth_type = observed
 extractor_version = f2a_rules_v1
+ruleset_hash = <sha256>
 ```
 
 F2A-02 deve criar migration nova com UNIQUE para idempotencia. Nao usar delete+insert
@@ -250,6 +273,11 @@ F2A-03 deve preencher classificacoes genericas:
 
 Nao usar valor quando nao houver evidencia clara.
 
+Observacao: classificacoes genericas tem cobertura limitada. `loss_reason=delivery`
+e `loss_reason=stock`, por exemplo, ficam mais fortes quando um pacote de segmento
+adiciona vocabulario especifico. Antes disso, gravar apenas quando houver evidencia
+generica clara.
+
 ### `analytics.customer_journey`
 
 Pode ficar para uma entrega posterior da F2a. Ela depende de agregacao por contato,
@@ -269,9 +297,9 @@ f2a_tires_v1
 Politica:
 
 - `conversation_signals`: snapshot atual, upsert por `conversation_id`.
-- `conversation_facts`: historico por `extractor_version`.
+- `conversation_facts`: historico por `extractor_version` e `ruleset_hash`.
 - `conversation_classifications`: historico por `extractor_version`.
-- `linguistic_hints`: historico por `extractor_version`, com UNIQUE novo na F2A-02.
+- `linguistic_hints`: historico por `extractor_version` e `ruleset_hash`, com UNIQUE novo na F2A-02.
 
 Retencao:
 
@@ -290,7 +318,7 @@ Padroes:
 - `conversation_facts`: usar chave existente `(environment, conversation_id, fact_key, source, extractor_version)`.
 - `conversation_classifications`: usar chave existente `(environment, conversation_id, dimension, source, extractor_version)`.
 - `linguistic_hints`: criar UNIQUE em migration nova na F2A-02. Chave sugerida:
-  `(environment, conversation_id, message_id, hint_type, pattern_id, source, extractor_version)`.
+  `(environment, conversation_id, message_id, hint_type, pattern_id, source, extractor_version, ruleset_hash)`.
 
 ## Fronteira de fork
 
@@ -303,4 +331,3 @@ farejador-base-v1, se o checklist operacional estiver verde.
 ```
 
 Nao criar `segments/tires` antes desse aviso.
-

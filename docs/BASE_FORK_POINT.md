@@ -198,12 +198,8 @@ Sim, se a Fase 1 tecnica estiver concluida, as ressalvas de producao plena estiv
 controladas e a Fase 2a generica estiver criada sem regras de segmento hardcoded no nucleo.
 ```
 
-## Proxima decisao
+## Decisao registrada
 
-Antes de bifurcar, decidir se o primeiro pacote de segmento sera:
-
-```text
-segments/tires
-```
-
-ou se pneus ficara apenas como exemplo de referencia enquanto o base e estabilizado.
+O primeiro pacote de segmento sera `segments/tires`, mas somente depois da tag/base
+`farejador-base-v1`. Antes dessa fronteira, pneus pode aparecer em fixtures e docs
+de referencia, mas nao em `src/enrichment/*` nem em `segments/tires`.
