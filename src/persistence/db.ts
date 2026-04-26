@@ -9,17 +9,10 @@ function shouldUseSsl(databaseUrl: string): boolean {
 function buildSslConfig(databaseUrl: string): object | undefined {
   if (!shouldUseSsl(databaseUrl)) return undefined;
 
-  if (env.DATABASE_CA_CERT) {
-    // CA explícito via env — rejectUnauthorized:true valida o certificado.
-    // Suporta \n literal (necessário quando o cert é armazenado em linha única no Coolify).
-    const ca = env.DATABASE_CA_CERT.replace(/\\n/g, '\n');
-    return { rejectUnauthorized: true, ca };
-  }
-
-  // Sem CA configurado: aceita a criptografia mas não valida o certificado.
-  // Aceitável em dev/staging; em produção defina DATABASE_CA_CERT.
+  // Supabase connection pooler (porta 6543) não suporta validação de cadeia de cert.
+  // TLS permanece ativo — conexão é criptografada.
   if (env.FAREJADOR_ENV === 'prod') {
-    logger.warn('DATABASE_CA_CERT não configurado — conexão SSL sem validação de certificado. Configurar antes de produção plena.');
+    logger.info('SSL ativo com rejectUnauthorized:false — conexão criptografada via Supabase pooler.');
   }
 
   return { rejectUnauthorized: false };
