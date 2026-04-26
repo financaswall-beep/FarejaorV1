@@ -4,7 +4,7 @@ Atualizado: 25/04/2026
 
 ## Status
 
-Fase 2a pode comecar. A Fase 1 tecnica esta concluida e a operacao segue em
+Fase 2a foi iniciada. A Fase 1 tecnica esta concluida e a operacao segue em
 shadow mode antes de producao plena.
 
 Fase 2a continua sem LLM. Tudo que for criado aqui deve ser deterministicamente
@@ -58,6 +58,8 @@ analytics.customer_journey
 
 ### F2A-01 - Conversation signals genericos
 
+Status: concluida, auditada e publicada no commit `bc44f4c`.
+
 Primeira entrega. Nao envolve regra de pneu.
 
 Implementar calculo deterministico de `analytics.conversation_signals`:
@@ -79,7 +81,14 @@ Tambem criar um CLI minimo para validacao manual:
 npm run enrich -- --conversation-id=<uuid> --segment=generic
 ```
 
-O CLI pode, nesta primeira entrega, executar apenas `conversation_signals`.
+O CLI, nesta primeira entrega, executa apenas `conversation_signals`.
+
+Auditoria aplicada:
+
+- CLI usa `env.FAREJADOR_ENV` centralizado.
+- CLI fecha o pool ao rodar como script.
+- Se a conversa nao existir no ambiente selecionado, o CLI falha explicitamente em vez de registrar falso sucesso.
+- Validacao final: `npm run typecheck`, `npm test` 133/133 e `npm run build`.
 
 ### F2A-02 - Motor generico de regras declarativas
 

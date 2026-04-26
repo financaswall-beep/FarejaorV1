@@ -38,7 +38,8 @@ confiavel de conversas para uso futuro em analytics e LLM.
 | F1.5 hardening | Concluido, publicado e documentado |
 | Fase 1 tecnica | Concluida |
 | Shadow mode Chatwoot real | Em andamento como ressalva operacional antes de producao plena |
-| Fase 2a arquitetura | Definida; F2A-01 pronta para Kimi |
+| F2A-01 conversation signals | Concluida, auditada e publicada |
+| Fase 2a proxima entrega | F2A-02 motor generico de regras declarativas |
 
 ## F1-01 - entregue
 
@@ -86,14 +87,21 @@ Regras criticas:
 
 ## Proxima etapa operacional
 
-A Fase 2a pode ser iniciada. Em paralelo, manter as ressalvas operacionais da Fase 1
+A Fase 2a foi iniciada. Em paralelo, manter as ressalvas operacionais da Fase 1
 antes de declarar producao plena.
 
-Primeira entrega recomendada:
+Entrega concluida:
 
 - F2A-01 `conversation_signals` genericos.
-- Prompt pronto em `docs/prompts/KIMI_F2A-01_PROMPT.md`.
-- Task detalhada em `docs/tasks/F2A-01-conversation-signals.md`.
+- Codigo publicado no commit `bc44f4c`.
+- Validacao: `npm run typecheck`, `npm test` 133/133 e `npm run build`.
+- Task detalhada e auditoria em `docs/tasks/F2A-01-conversation-signals.md`.
+
+Proxima entrega recomendada:
+
+- F2A-02 motor generico de regras declarativas.
+- Usar `docs/tasks/F2A-02-generic-rule-engine.md`.
+- Nao criar regras de pneu ainda.
 
 Fronteira do fork:
 
@@ -145,7 +153,7 @@ Status do shadow mode:
   - 2 workers executados em paralelo.
   - 80/80 `processed`.
   - 0 duplicatas em `core.messages`.
-- Proximo passo operacional: iniciar Fase 2a sem LLM em paralelo ao shadow mode, monitorar operacao e rotacionar secrets antes de producao plena.
+- Proximo passo operacional: continuar Fase 2a sem LLM em paralelo ao shadow mode, monitorar operacao e rotacionar secrets antes de producao plena.
 
 ## F1.5 - Hardening aplicado em 2026-04-25
 

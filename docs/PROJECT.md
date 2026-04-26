@@ -20,11 +20,12 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 - F1-03 admin endpoints: concluida, auditada, corrigida e validada com Chatwoot/Supabase reais.
 - F1.5 hardening pre-producao plena: aplicado e publicado.
 - Fase 1 tecnica: concluida. Estado atual: shadow mode controlado antes de producao plena.
-- Fase 2a: arquitetura definida; primeira entrega planejada e pronta para Kimi executar.
+- Fase 2a: iniciada. F2A-01 `conversation_signals` concluida, auditada e publicada.
+- Proxima entrega: F2A-02 motor generico de regras declarativas.
 
 Validacao atual:
 
-- `npm test`: 112/112.
+- `npm test`: 133/133.
 - `npm run typecheck`: verde.
 - `npm run build`: verde.
 - Webhook real, replay real, reconcile real e dois workers concorrentes ja foram validados.
@@ -75,12 +76,13 @@ Validacao atual:
 
 ## Decisoes iniciais da F2a
 
-- F2a comeca por sinais estruturais genericos em `analytics.conversation_signals`.
+- F2a comecou por sinais estruturais genericos em `analytics.conversation_signals`.
 - O nucleo de enrichment fica em `src/enrichment/*`.
 - Regras de negocio ficam em `segments/*`.
 - A selecao de segmento usa `segments/routing.json` por `environment + chatwoot_account_id`.
 - O primeiro pacote de segmento de pneus so deve nascer depois da fronteira do fork.
 - A fronteira do fork acontece ao fim da F2A-03, quando signals, regras e classificacoes genericas existirem sem regras de pneus.
+- F2A-01 adicionou o CLI `npm run enrich -- --conversation-id=<uuid> --segment=generic`; nesta entrega, `--segment` e aceito e ignorado com log claro.
 
 ## Stack
 
