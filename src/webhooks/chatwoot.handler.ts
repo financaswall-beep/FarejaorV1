@@ -7,44 +7,16 @@ import { logger } from '../shared/logger.js';
 import { chatwootWebhookEnvelopeSchema, chatwootWebhookHeadersSchema } from '../shared/types/chatwoot.js';
 import { parseChatwootTimestamp, validateHmac, validateTimestamp } from './chatwoot.hmac.js';
 
-interface WebhookBody {
-  raw: Buffer;
-  parsed: unknown;
-}
-
-function getWebhookBody(request: FastifyRequest): WebhookBody | null {
-  const legacyWrappedBody = request.body;
-  if (
-    typeof legacyWrappedBody === 'object' &&
-    legacyWrappedBody !== null &&
-    Buffer.isBuffer((legacyWrappedBody as { raw?: unknown }).raw) &&
-    'parsed' in legacyWrappedBody
-  ) {
-    return legacyWrappedBody as WebhookBody;
-  }
-
-  const rawBody = (request.raw as typeof request.raw & { rawBody?: unknown }).rawBody;
-  if (!Buffer.isBuffer(rawBody)) {
-    return null;
-  }
-
-  return {
-    raw: rawBody,
-    parsed: request.body,
-  };
-}
-
 export async function chatwootWebhookHandler(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const webhookBody = getWebhookBody(request);
-  if (!webhookBody) {
+  const rawBody = (request.raw as typeof request.raw & { rawBody?: unknown }).rawBody;
+  if (!Buffer.isBuffer(rawBody)) {
     return reply.status(400).send({ error: 'Invalid request body' });
   }
 
-  const rawBody = webhookBody.raw;
-  const parsedBody = webhookBody.parsed;
+  const parsedBody = request.body;
 
   const headersResult = chatwootWebhookHeadersSchema.safeParse(request.headers);
   if (!headersResult.success) {

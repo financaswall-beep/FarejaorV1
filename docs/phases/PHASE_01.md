@@ -48,7 +48,7 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
 - Mensagens fora de ordem criam stub de conversa.
 - Attachments recebem o UUID de conversa retornado por `upsertMessage`.
 - Reactions ainda sao placeholder, mas payload recebido gera `logger.warn`.
-- Validacao: 60 testes, typecheck e build verdes.
+- Validacao: 192 testes, typecheck e build verdes.
 
 ## F1-03 - resumo do fechamento
 
@@ -58,7 +58,7 @@ bruto e normalizar para tabelas operacionais `core.*`. Tudo deterministico, zero
 - Cliente Chatwoot usa `fetch` nativo, timeout de 10s e retry em 429/5xx.
 - Reconcile injeta somente raw_events sinteticos e usa `raw.delivery_seen` para dedup.
 - Reconcile explicita resultado parcial com `aborted`/`abort_reason` quando a paginacao falha.
-- Validacao local apos hardening: 112 testes, typecheck e build verdes.
+- Validacao local apos hardening: 192 testes, typecheck e build verdes.
 
 ## Shadow mode real - resumo atual
 

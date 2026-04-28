@@ -1061,3 +1061,231 @@ raw guarda o que chegou.
 core organiza o que aconteceu.
 analytics explica o que isso significa.
 ```
+
+---
+
+# Adicoes da Fase 3 (Agente Conversacional)
+
+Atualizado: 27/04/2026
+
+A Fase 3 adiciona dois novos andares ao banco:
+
+| Andar | Schema | Explicacao simples |
+| --- | --- | --- |
+| Estado vivo do agente | `agent` | Carrinho atual, rascunho do pedido, pergunta pendente. Tudo que o agente esta fazendo agora. |
+| Catalogo da loja | `commerce` | Produtos, fitments, estoque, precos, pedidos confirmados. |
+
+E acrescenta uma nova tabela em `analytics.*`:
+
+- `analytics.fact_evidence` - guarda o texto literal que justifica cada fato extraido pela LLM.
+
+E acrescenta uma nova fila em `ops.*`:
+
+- `ops.atendente_jobs` - fila do worker da Atendente.
+
+## Por que `agent.*` e separado de `commerce.*`
+
+Pensa em duas planilhas diferentes:
+
+- `agent.*` e o **rascunho** do pedido. O cliente pode trocar pneu, mudar endereco, voltar atras.
+- `commerce.*` e o **pedido confirmado**. So nasce quando o humano fechou.
+
+Misturar os dois polui o relatorio fiscal com rascunho que pode ter mudado 5 vezes.
+
+## Tabelas novas em `agent.*`
+
+### `agent.session_current`
+
+Foto atual da sessao do agente: ativa, pausada, escalada ou fechada. Qual skill esta ativa.
+
+Uma linha por conversa.
+
+### `agent.session_events`
+
+Historico imutavel do que o agente decidiu na sessao. Append-only. Skill ativada, confirmacao pedida, carrinho proposto, humano chamado.
+
+### `agent.turns`
+
+Cada resposta da LLM Atendente. Guarda mensagem que disparou, skill escolhida, output `{ say, actions }`, mensagem enviada no Chatwoot.
+
+Idempotente: mesmo `trigger_message_id` + `agent_version` nao gera dois turnos.
+
+### `agent.pending_confirmations`
+
+Perguntas que o agente fez e ainda nao foram respondidas. Ex: "e Bros 160 traseira?". Tem expiracao.
+
+### `agent.cart_current` + `agent.cart_current_items`
+
+Carrinho atual da conversa. So itens (pneu, medida, quantidade). Endereco e pagamento ficam em `agent.order_drafts`.
+
+### `agent.cart_events`
+
+Historico imutavel do carrinho. Eventos: proposed, confirmed, validated, promoted, removed, replaced, cleared.
+
+### `agent.order_drafts`
+
+Rascunho do checkout: nome do cliente, endereco, modalidade (entrega/retirada), forma de pagamento.
+
+Uma linha por conversa.
+
+Quando o humano confirma e fecha, o draft e promovido: `draft_status` vira `promoted` e `promoted_order_id` aponta para `commerce.orders`.
+
+### `agent.escalations`
+
+Quando o agente passa pra humano. Status: aguardando, em_atendimento, resolvida, devolvida_bot.
+
+## Tabelas novas em `commerce.*`
+
+### `commerce.products`
+
+Cabecalho de cada item vendavel. Nome, marca, tipo (pneu, camara, oleo, servico). Nao guarda preco nem estoque - esses ficam separados.
+
+### `commerce.tire_specs`
+
+Especificacao tecnica do pneu: medida, largura, perfil, aro, indice de carga, posicao recomendada.
+
+Um produto pode ter um spec.
+
+### `commerce.vehicle_models`
+
+Modelos de veiculo: Honda CG 160, Yamaha Fazer 250, etc. Tem ano, cilindrada, segmento.
+
+### `commerce.vehicle_fitments`
+
+Compatibilidade entre veiculo e pneu. "Esse pneu serve nessa moto, na posicao traseira."
+
+### `commerce.fitment_discoveries`
+
+Quando o agente descobre uma compatibilidade nova durante a conversa. Status: pending, approved, rejected, promoted.
+
+So vira `vehicle_fitments` oficial depois que humano aprovou.
+
+### `commerce.product_media`
+
+Fotos e videos do produto.
+
+### `commerce.stock_levels`
+
+Quanto tem disponivel agora.
+
+### `commerce.product_prices`
+
+Preco com periodo de validade (valid_from / valid_until). Permite promocao.
+
+### `commerce.geo_resolutions`
+
+Bairros e municipios normalizados. "Bonsucesso" e "Bonsuceso" viram a mesma linha. Util para entrega.
+
+### `commerce.delivery_zones`
+
+Areas de entrega: bairro + taxa + prazo + modalidade.
+
+### `commerce.store_policies`
+
+Politicas da loja em formato chave/valor. Ex: `prazo_garantia_pneus`, `forma_pagamento_aceita`.
+
+### `commerce.import_batches` + `commerce.import_errors`
+
+Controle de importacao por planilha. Toda importacao gera batch. Linhas com erro ficam em `import_errors`.
+
+### `commerce.orders` + `commerce.order_items`
+
+Pedido confirmado. So nasce quando humano fechou (v1) ou transacao automatica fechou (v2 futuro).
+
+## Tabelas novas em `analytics.*`
+
+### `analytics.fact_evidence`
+
+Guarda o texto literal que justifica cada fato extraido pela LLM Organizadora.
+
+```text
+fact: moto_modelo = "CG 160"
+evidence_text: "tenho uma CG 160 2022"
+from_message_id: <id da mensagem>
+evidence_type: literal
+```
+
+Sem evidence, fact da LLM e rejeitado.
+
+### Nova coluna em `analytics.conversation_facts`
+
+`superseded_by_id` - aponta pro novo fato quando algo mudou. Ex: cliente disse CG 160, depois corrigiu pra Bros 160. O CG 160 nao apaga, ganha `superseded_by_id` apontando para o novo Bros 160.
+
+Auditoria total. Nada se perde.
+
+## Tabelas novas em `ops.*`
+
+### `ops.atendente_jobs`
+
+Fila do worker da Atendente. Cada mensagem do cliente vira um job. Worker pega em milissegundos.
+
+Status: pending, processing, processed, failed.
+
+### `ops.unhandled_messages`
+
+Mensagens que cairam em `responder_geral` (skill de fallback). Sao insumo para criar skill nova.
+
+### `ops.agent_incidents`
+
+Bloqueios e falhas do agente. Tipos:
+
+- validator_blocked: Say ou Action Validator barrou
+- llm_timeout: LLM nao respondeu
+- llm_api_error: erro na API
+- pending_confirmation_expired: pergunta nao foi respondida
+- transaction_rollback: transacao falhou
+- router_no_skill_matched: nenhuma skill bateu
+- evidence_not_literal: LLM extraiu fato sem evidence valida
+- schema_violation: LLM tentou usar fact_key fora do extraction-schema
+
+### `ops.enrichment_jobs` (atualizada)
+
+Ja existia. Ganha campos novos:
+
+- `last_message_id` - ate qual mensagem deve processar
+- `last_processed_message_id` - ate qual processou
+- `not_before` - debounce de 60-120s
+- `job_type` - organize_conversation, reenrich_conversation, backfill
+
+Um job por conversa, com upsert. Mensagem nova reseta o debounce.
+
+## Como tudo se conecta
+
+```text
+core.messages
+   |
+   +-> ops.atendente_jobs   (mensagem do cliente vira job)
+   +-> ops.enrichment_jobs  (upsert por conversa)
+   +-> agent.turns          (cada resposta da Atendente)
+   +-> analytics.fact_evidence  (texto literal de cada fato)
+
+agent.order_drafts
+   |
+   +-> commerce.orders      (quando promove via promoted_order_id)
+   +-> commerce.geo_resolutions  (bairro normalizado)
+
+agent.cart_current_items
+   |
+   +-> commerce.products    (qual produto esta no carrinho)
+
+commerce.fitment_discoveries
+   |
+   +-> commerce.vehicle_fitments  (quando promove via promoted_to_fitment_id)
+   +-> core.conversations         (em qual conversa foi descoberto)
+```
+
+## Tres frases que resumem a Fase 3
+
+```text
+agent guarda o que esta acontecendo agora.
+commerce guarda o que e venda real.
+analytics guarda o que entendemos depois.
+```
+
+## Onde aprofundar
+
+- Doc 04 (`docs/phase3-agent-architecture/04-blocos-do-banco.md`) - lista de tabelas por bloco
+- Doc 16 (`docs/phase3-agent-architecture/16-planejamento-tabelas-em-portugues.md`) - cada tabela em portugues, campo a campo
+- Doc 17 (`docs/phase3-agent-architecture/17-mapa-portugues-ingles.md`) - mapa de nomes pt -> en tecnico
+- Doc 18 (`docs/phase3-agent-architecture/18-diagrama-er.md`) - relacoes entre tabelas
+- ADR-004 (`docs/adr/ADR-004-fase-3-arquitetura-agente.md`) - decisoes arquiteturais

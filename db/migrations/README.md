@@ -10,6 +10,22 @@ Ordem de execução:
 6. `0006_concurrency_guards.sql` — `raw.delivery_seen` (bouncer dedup), `last_event_at` + trigger watermark em core, helper `ops.ensure_monthly_partitions()`
 7. `0007_raw_immutability_guard.sql` — trigger BEFORE UPDATE/DELETE em `raw.raw_events` enforçando imutabilidade do payload (whitelist: processing_status, processing_error, processed_at)
 8. `0008_idempotency_constraints.sql` — UNIQUE constraints em `core.conversation_status_events` e `core.conversation_assignments` com script de dedup defensivo prévio
+9. `0009_orphan_stub_monitor.sql` — view e função para detectar stubs órfãos
+10. `0010_analytics_ruleset_auditability.sql` — auditoria de regras declarativas (F2A-02)
+11. `0011_relax_hint_type_check.sql` — relaxa CHECK de hint_type em linguistic_hints
+12. `0012_classification_ruleset_auditability.sql` — classificações determinísticas (F2A-03)
+
+### Fase 3 — Agente Conversacional (novas migrations)
+
+13. `0013_commerce_layer.sql` — schema `commerce.*`: products, tire_specs, vehicle_models, vehicle_fitments, product_media, stock_levels, product_prices, geo_resolutions, delivery_zones, store_policies, import_batches, import_errors, fitment_discoveries, orders, order_items
+14. `0014_commerce_indexes.sql` — índices fuzzy (pg_trgm) em produtos, veículos, geo; índices de preço e estoque
+15. `0015_commerce_views.sql` — views `current_prices`, `product_full`, `customer_profile`, `low_stock_alerts`
+16. `0016_agent_layer.sql` — schema `agent.*`: session_current, session_events, turns, pending_confirmations, cart_current, cart_current_items, cart_events, order_drafts, escalations + view `pending_human_closures`
+17. `0017_agent_triggers.sql` — triggers de validação cruzada (fitment position vs vehicle_type, cart promotion, draft promotion), updated_at automático, append-only enforcement em session_events e cart_events
+18. `0018_analytics_evidence.sql` — `analytics.fact_evidence` (NOVA), views `current_facts` e `current_classifications`. NOTA: `superseded_by` em conversation_facts já existe desde 0004.
+19. `0019_ops_phase3_additions.sql` — `ops.atendente_jobs` (NOVA), extensão de `ops.enrichment_jobs` (campos `conversation_id`, `last_message_id`, `not_before`, `locked_at`), `ops.unhandled_messages`, `ops.agent_incidents`, funções `enqueue_enrichment_job` e `enqueue_atendente_job`
+20. `0020_vehicle_fitment_validation.sql` — validação de tipo de produto em fitment, validação de produto não-deletado em cart, helpers `find_compatible_tires`, `resolve_neighborhood`, `build_escalation_summary` + view `agent_dashboard`
+21. `0021_environment_match_guards.sql` — função paramétrica `ops.validate_env_match` + 30+ triggers que enforçam invariante "prod nunca cruza com test" via FK cross-table. Também adiciona `ops.enforce_environment_immutable` + ~25 triggers que bloqueiam UPDATE de environment (sem isso, env_match seria burlado mudando só environment). Cobre todas as tabelas novas da Fase 3. Tabelas legadas ficam fora do escopo (ver TODO em `0022_environment_immutable_legacy.sql` futura).
 
 ## Convenções
 
@@ -62,8 +78,25 @@ O projeto evolui em 3 fases. Responsabilidades **não** atravessam fronteira de 
 
 **LLM nunca escreve em `raw.*` ou `core.*`**. Se precisar, abre um `ops.enrichment_jobs` para humano revisar.
 
-### Fase 3 — Agente atendente (serviço separado, mês 4+)
-Container próprio, runtime próprio. Lê `core.*` e `analytics.*` como cliente read-only. Não faz parte das migrations deste repo — consome a base estruturada que as fases 1-2b produziram.
+### Fase 3 — Agente atendente
+
+Migrations 0013-0020 nesta pasta criam o schema `commerce.*` (catálogo + pedidos), `agent.*` (estado vivo do atendimento) e estendem `analytics.*` e `ops.*`.
+
+**Topologia (ver `docs/phase3-agent-architecture/14-topologia-de-execucao.md`):**
+
+- **Farejador API** (síncrono, leve): webhook do Chatwoot, grava `raw.*`+`core.*`, enfileira `ops.atendente_jobs` e `ops.enrichment_jobs`. Responde 200 rápido.
+- **Atendente Worker** (async, baixa latência): consome `ops.atendente_jobs`, monta contexto, chama LLM Atendente, valida `{ say, actions }`, action handlers gravam `agent.*`, posta resposta no Chatwoot via API.
+- **Organizadora Worker** (async, debounce 60-120s): consome `ops.enrichment_jobs`, lê `core.messages`, chama LLM Organizadora com schema fechado (`segments/moto-pneus/extraction-schema.json`), grava `analytics.*` (append-only com `superseded_by` e `fact_evidence` literal).
+
+**Princípios sagrados:**
+
+- Webhook nunca dispara LLM síncrona (200-rápido obrigatório)
+- LLM Atendente nunca toca o banco — apenas via `action handler` validado
+- LLM Organizadora extrai apenas `fact_keys` da whitelist (chave fora vira `ops.agent_incidents.schema_violation`)
+- `analytics.*` é append-only: mudança de fato vira nova linha + `superseded_by`. Nunca UPDATE de valor.
+- `agent.*` é rascunho/estado vivo. `commerce.*` é venda confirmada. Promoção via `agent.order_drafts.promoted_order_id`.
+
+**Shadow Assistido** (5 semanas): Wallace atende manualmente. Farejador captura. Organizadora processa. Atendente fica desligada por feature flag. Calibração antes de ligar.
 
 ### Fase 4 — Fora do plano ativo
 Treinar LLM próprio a partir do dataset capturado permanece apenas como possibilidade de roadmap distante. Não planejar, não pré-otimizar para isso.

@@ -56,27 +56,6 @@ function createRequest(payload: unknown, options: RequestOptions = {}): FastifyR
   }
 
   return {
-    body: { raw, parsed: payload },
-    headers,
-  } as unknown as FastifyRequest;
-}
-
-function createParsedBodyRequest(payload: unknown, options: RequestOptions = {}): FastifyRequest {
-  const raw = Buffer.from(JSON.stringify(payload));
-  const timestamp = options.timestamp ?? String(Math.floor(Date.now() / 1000));
-  const signedPayload = Buffer.concat([Buffer.from(`${timestamp}.`, 'utf8'), raw]);
-  const signature = options.signatureOverride
-    ?? createHmac('sha256', baseEnv.CHATWOOT_HMAC_SECRET).update(signedPayload).digest('hex');
-  const headers: Record<string, string> = {
-    'x-chatwoot-signature': signature,
-    'x-chatwoot-delivery': options.deliveryId ?? 'delivery-parsed-body',
-  };
-
-  if (!options.omitTimestamp) {
-    headers['x-chatwoot-timestamp'] = timestamp;
-  }
-
-  return {
     body: payload,
     raw: { rawBody: raw },
     headers,
@@ -156,7 +135,7 @@ describe('chatwootWebhookHandler', () => {
     const reply = createReply();
 
     await handler(
-      createParsedBodyRequest({ event: 'message_created', account: { id: 1 }, id: 1002 }),
+      createRequest({ event: 'message_created', account: { id: 1 }, id: 1002 }, { deliveryId: 'delivery-parsed-body' }),
       reply,
     );
 

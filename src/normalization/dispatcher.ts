@@ -18,6 +18,7 @@ import { insertStatusEvent } from '../persistence/status-events.repository.js';
 import { insertAssignment } from '../persistence/assignments.repository.js';
 import { insertReaction } from '../persistence/reactions.repository.js';
 import { upsertTags } from '../persistence/tags.repository.js';
+import { enqueueOrganizadoraJob } from '../persistence/enrichment-jobs.repository.js';
 
 export interface RawEvent {
   id: number;
@@ -193,6 +194,12 @@ export async function dispatch(
 
       const message = mapMessage(payload, environment, lastEventAt);
       const upsertedMessage = await upsertMessage(client, message);
+
+      // Enfileira job da Organizadora para a conversa (debounce configurável via env).
+      // Só para message_created — message_updated não dispara nova extração.
+      if (eventType === 'message_created' && env.ORGANIZADORA_ENABLED) {
+        await enqueueOrganizadoraJob(client, environment, upsertedMessage.conversationId, upsertedMessage.messageId);
+      }
 
       const attachments = (payload.attachments ?? []) as Array<
         Record<string, unknown>

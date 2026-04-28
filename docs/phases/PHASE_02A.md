@@ -88,7 +88,7 @@ Auditoria aplicada:
 - CLI usa `env.FAREJADOR_ENV` centralizado.
 - CLI fecha o pool ao rodar como script.
 - Se a conversa nao existir no ambiente selecionado, o CLI falha explicitamente em vez de registrar falso sucesso.
-- Validacao final: `npm run typecheck`, `npm test` 133/133 e `npm run build`.
+- Validacao final: `npm run typecheck`, `npm test` 192/192 e `npm run build`.
 
 ### F2A-02 - Motor generico de regras declarativas
 
@@ -116,7 +116,7 @@ Auditoria aplicada:
 - ids de regra duplicados sao rejeitados;
 - loader valida consistencia de segmento e locale;
 - migration 0010 evita duplicata por `pattern_id` nulo e cria `hints_dedup_key` de forma segura para reaplicacao;
-- validacao final: `npm run typecheck`, `npm test` 170/170 e `npm run build`.
+- validacao final: `npm run typecheck`, `npm test` 192/192 e `npm run build`.
 - Supabase real: migration 0010 aplicada; `hints_dedup_key` validada; teste de insert/duplicata em `analytics.linguistic_hints` executado em transacao com rollback.
 
 Estrutura minima de cada segmento:

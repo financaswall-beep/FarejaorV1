@@ -78,6 +78,7 @@ via upsert idempotente com watermark de ordem.
 - `src/persistence/reactions.repository.ts`
 - `src/persistence/tags.repository.ts`
 - `tests/unit/normalization/*`
+- `tests/unit/normalization/reaction.mapper.test.ts` (placeholder rastreavel) <!-- adicionado por Kimi 2026-04-28 -->
 - `tests/unit/persistence/*`
 
 ## Checklist final
@@ -100,6 +101,7 @@ via upsert idempotente com watermark de ordem.
 - [x] Event type desconhecido marca `skipped`.
 - [x] Attachments usam o UUID de conversa retornado pelo upsert da mensagem.
 - [x] Reactions placeholder geram `logger.warn`.
+- [x] Teste unitario de reaction.mapper existe (placeholder retorna `null`).
 
 ## Validacao
 

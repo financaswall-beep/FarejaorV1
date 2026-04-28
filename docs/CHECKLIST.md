@@ -85,7 +85,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Attachments usam UUID de conversa retornado por `upsertMessage`.
 - [x] Reaction placeholder gera `logger.warn`.
 - [x] Sem analytics, sem ops.enrichment_jobs, sem LLM e sem chamada externa.
-- [x] `npm test` 60/60.
+- [x] `npm test` 192/192.
 - [x] `npm run typecheck` verde.
 - [x] `npm run build` verde.
 
@@ -100,7 +100,7 @@ Legenda: feito, em andamento, proximo, futuro.
 - [x] Reconcile injeta raw_events sinteticos com delivery_id deterministico.
 - [x] Reconcile retorna resultado parcial quando a paginacao falha.
 - [x] Testes unitarios de auth, health, replay, cliente Chatwoot, reconcile service e route.
-- [x] `npm test` 112/112.
+- [x] `npm test` 192/192.
 - [x] `npm run typecheck` verde.
 - [x] `npm run build` verde.
 - [x] Teste manual com Chatwoot real e Supabase real para webhook, contato, conversa e mensagem.
@@ -148,7 +148,7 @@ Auditoria tecnica completa realizada antes de producao plena. Itens aplicados e 
 Pendente da F1.5:
 - [x] Harness de integracao com Postgres real criado via Testcontainers e GitHub Actions. Execucao local pendente por falta de Docker Desktop.
 - [ ] Zod permissivo nos mappers criticos (contact, conversation, message).
-- [ ] Limpar body legado do handler e migrar testes para caminho real de producao.
+- [x] Limpar body legado do handler e migrar testes para caminho real de producao.
 
 ## 6. Futuro
 
@@ -167,3 +167,114 @@ Pendente da F1.5:
   - [ ] F2A-05: pacote `segments/tires` somente depois da tag.
 - [ ] Fase 2b: enrichment com LLM escrevendo somente em `analytics.*`.
 - [ ] Fase 3: agente conversacional separado, read-only sobre Farejador.
+
+## 7. Fase 3 - Agente Conversacional
+
+### 7.1 Etapa A - Documentacao de arquitetura (concluida)
+
+- [x] `docs/phase3-agent-architecture/01-visao-geral.md`
+- [x] `docs/phase3-agent-architecture/02-principios-operacionais.md`
+- [x] `docs/phase3-agent-architecture/03-mapa-de-dados.md`
+- [x] `docs/phase3-agent-architecture/04-blocos-do-banco.md`
+- [x] `docs/phase3-agent-architecture/05-fact-ledger-organizadora.md`
+- [x] `docs/phase3-agent-architecture/06-agent-state-atendente.md`
+- [x] `docs/phase3-agent-architecture/07-commerce-grafo-veicular.md`
+- [x] `docs/phase3-agent-architecture/08-business-intelligence-data-king.md`
+- [x] `docs/phase3-agent-architecture/09-skills-router-e-validadores.md`
+- [x] `docs/phase3-agent-architecture/10-plano-de-fases.md`
+- [x] `docs/phase3-agent-architecture/11-perguntas-abertas.md`
+- [x] `docs/phase3-agent-architecture/12-context-builder-e-slot-filling.md`
+- [x] `docs/phase3-agent-architecture/13-fluxo-de-eventos-e-integracao.md`
+- [x] `docs/phase3-agent-architecture/14-topologia-de-execucao.md`
+- [x] `docs/phase3-agent-architecture/15-shadow-assisted-mode.md`
+- [x] `docs/phase3-agent-architecture/16-planejamento-tabelas-em-portugues.md`
+- [x] `docs/phase3-agent-architecture/17-mapa-portugues-ingles.md`
+- [x] `docs/phase3-agent-architecture/18-diagrama-er.md`
+- [x] `docs/adr/ADR-004-fase-3-arquitetura-agente.md`
+- [x] `segments/moto-pneus/extraction-schema.json`
+- [x] `docs/DATA_DICTIONARY.md` atualizado com Fase 3
+
+### 7.2 Etapa B - Migrations SQL
+
+- [x] `0013_commerce_layer.sql` (products, tire_specs, vehicle_models, fitments, media, stock, prices, geo, orders, etc.)
+- [x] `0014_commerce_indexes.sql` (fuzzy via pg_trgm, indices de preco e estoque)
+- [x] `0015_commerce_views.sql` (current_prices, product_full, customer_profile, low_stock_alerts)
+- [x] `0016_agent_layer.sql` (session, turns, cart, order_drafts, escalations + view pending_human_closures)
+- [x] `0017_agent_triggers.sql` (validacoes cross-table, updated_at, append-only enforcement)
+- [x] `0018_analytics_evidence.sql` (fact_evidence + views current_facts e current_classifications)
+- [x] `0019_ops_phase3_additions.sql` (atendente_jobs, enrichment_jobs upgrade, unhandled_messages, agent_incidents + funcoes enqueue)
+- [x] `0020_vehicle_fitment_validation.sql` (validacoes finais + helpers find_compatible_tires, resolve_neighborhood, build_escalation_summary + agent_dashboard)
+- [x] `0021_environment_match_guards.sql` (funcao parametrica + 30+ triggers env_match cross-table; enforce prod/test no banco)
+- [x] Cada migration idempotente (CREATE/ALTER IF NOT EXISTS)
+- [ ] Cada migration validada em Postgres real (proximo passo do Wallace: aplicar em Supabase staging)
+- [ ] Testes de integracao por migration (Kimi escreve depois)
+
+### 7.3 Etapa C - Codigo TypeScript
+
+- [x] `src/shared/types/agent.ts` — interfaces para agent.* (session, turns, cart, drafts, escalations)
+- [x] `src/shared/types/commerce.ts` — interfaces para commerce.* (products, tire_specs, fitments, orders, views)
+- [x] `src/shared/types/analytics-phase3.ts` — fact_evidence, current_facts, current_classifications
+- [x] `src/shared/types/ops-phase3.ts` — atendente_jobs, unhandled_messages, agent_incidents
+- [x] `src/shared/zod/agent-actions.ts` — discriminated union das 8 actions + llmAtendenteResponseSchema
+- [x] `src/shared/zod/fact-keys.ts` — schemas individuais dos 30 fact_keys + validateFactValue()
+- [x] `src/shared/zod/llm-organizadora.ts` — envelope da Organizadora + parseOrganizadoraResponse()
+- [x] `src/shared/llm-clients/openai.ts` — cliente OpenAI via fetch nativo (timeout, 1 retry)
+- [x] `src/shared/repositories/ops-phase3.repository.ts` — pickEnrichmentJob, markJobRunning/Done/Failed, logIncident
+- [x] `src/shared/repositories/analytics-phase3.repository.ts` — writeFactWithEvidence (fact + supersede + evidence)
+- [x] `src/shared/repositories/core-reader.repository.ts` — listMessagesForOrganizadora, getContactByConversationId
+- [x] `src/persistence/enrichment-jobs.repository.ts` — enqueueOrganizadoraJob via ops.enqueue_enrichment_job()
+- [x] `src/normalization/dispatcher.ts` — enfileira job após message_created quando ORGANIZADORA_ENABLED=true
+- [x] `src/organizadora/prompt.ts` — buildOrganizadoraPrompt (system + transcrição com msg_ids)
+- [x] `src/organizadora/worker.ts` — loop completo: pickup → LLM → validate → write facts → mark done
+- [x] `src/organizadora/index.ts` — entrypoint com graceful shutdown
+- [x] `src/shared/config/env.ts` — ORGANIZADORA_ENABLED, OPENAI_API_KEY, OPENAI_MODEL, debounce, poll interval
+- [x] `.env.example` — variáveis da Organizadora documentadas
+- [x] `npm run typecheck` verde (0 erros)
+- [x] `npm test` verde (193/193)
+- [ ] `src/shared/validators/` - SayValidator, ActionValidator (Atendente — próxima etapa)
+- [ ] `src/atendente/` - worker async (Atendente — após Shadow Assistido)
+- [ ] Migrations 0013-0021 aplicadas em staging (tarefa do Wallace)
+- [ ] Teste manual da Organizadora em environment=test com conversa real
+
+### 7.4 Etapa D - Shadow Assistido (5 semanas)
+
+- [ ] Feature flag `ATENDENTE_ENABLED=false` em producao
+- [ ] LLM Organizadora rodando, populando `analytics.*` com conversas reais
+- [ ] Wallace atende manualmente
+- [ ] Calibracao semanal:
+  - [ ] fact_keys reais vs teoricas (extraction-schema.json ajustado se necessario)
+  - [ ] taxa de evidence_not_literal abaixo de 5%
+  - [ ] taxa de schema_violation zero
+  - [ ] taxonomia de classifications estavel (promove TEXT->ENUM apos 4-8 semanas)
+- [ ] Volume esperado: ~100 conversas/dia x 35 dias = ~3.500 conversas
+- [ ] Decisao final de ligar Atendente baseada em metricas reais
+
+### 7.5 Etapa E - Atendente em v1
+
+- [ ] Atendente liga com `ATENDENTE_ENABLED=true`
+- [ ] Pedido NAO criado automaticamente; humano fecha via escalacao
+- [ ] Monitoramento: taxa de validator_blocked, llm_timeout, fallback_responder_geral
+- [ ] Auditoria semanal de `agent.turns` e `ops.agent_incidents`
+
+### 7.6 Etapa F - BI (Rei dos Dados)
+
+- [ ] Views analiticas (demanda_por_bairro, motivo_perda, taxa_conversao, etc)
+- [ ] Marts agregadas com refresh diario
+- [ ] Dashboard (Metabase ou similar)
+- [ ] Doc 08 (`08-business-intelligence-data-king.md`) virar SQL real
+
+### 7.7 Deploy
+
+- [ ] 3 entrypoints definidos: `dist/farejador.js`, `dist/atendente.js`, `dist/organizadora.js`
+- [ ] Mesma imagem Docker, 3 servicos no Coolify (preferido)
+- [ ] Healthcheck por servico (`/healthz` em portas separadas)
+- [ ] Logs estruturados JSON com campo `service`
+- [ ] Metricas: latencia webhook->200, latencia job->resposta, backlog por fila
+
+### 7.8 Decisoes ainda em aberto (doc 11)
+
+- [ ] Provider de LLM definitivo
+- [ ] Politica de PII no prompt (nome, telefone, endereco)
+- [ ] Comportamento fora de horario comercial
+- [ ] Politica de retry/fallback de LLM
+- [ ] Marts analiticos prioritarios (sessao com Wallace)

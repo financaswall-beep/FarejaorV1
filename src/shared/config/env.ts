@@ -17,6 +17,13 @@ const envSchema = z.object({
   ADMIN_AUTH_TOKEN: z.string().min(1),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   SIGNAL_TIMEZONE: z.string().min(1).default('America/Sao_Paulo'),
+  // Organizadora (Fase 3)
+  ORGANIZADORA_ENABLED: booleanStringSchema,
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  OPENAI_TIMEOUT_MS: z.string().transform(Number).pipe(z.number().int().min(1000)).default('30000'),
+  ORGANIZADORA_DEBOUNCE_SECONDS: z.string().transform(Number).pipe(z.number().int().min(10)).default('90'),
+  ORGANIZADORA_POLL_INTERVAL_MS: z.string().transform(Number).pipe(z.number().int().min(1000)).default('5000'),
   SKIP_EVENT_TYPES: z
     .string()
     .default('')

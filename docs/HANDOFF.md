@@ -68,7 +68,7 @@ confiavel de conversas para uso futuro em analytics e LLM.
 - Status events e assignments idempotentes.
 - Reaction mapper placeholder com `logger.warn` quando payload aparece.
 - `SAVEPOINT normalize_event` preservado de proposito.
-- Validacao final: `npm test` 60/60, `npm run typecheck`, `npm run build`.
+- Validacao final: `npm test` 192/192, `npm run typecheck`, `npm run build`.
 
 ## F1-03 - entregue
 
@@ -85,7 +85,7 @@ Regras criticas:
 - Replay so muda campos operacionais: `processing_status`, `processing_error`, `processed_at`.
 - Reconcile injeta em raw, nunca escreve direto em core.
 - Reconcile retorna resultado parcial com `aborted` e `abort_reason` em falha de paginacao.
-- Validacao local final apos hardening: `npm test` 112/112, `npm run typecheck`,
+- Validacao local final apos hardening: `npm test` 192/192, `npm run typecheck`,
   `npm run build`.
 
 ## Proxima etapa operacional
@@ -97,7 +97,7 @@ Entrega concluida:
 
 - F2A-01 `conversation_signals` genericos.
 - Codigo publicado no commit `bc44f4c`.
-- Validacao: `npm run typecheck`, `npm test` 133/133 e `npm run build`.
+- Validacao: `npm run typecheck`, `npm test` 192/192 e `npm run build`.
 - Task detalhada e auditoria em `docs/tasks/F2A-01-conversation-signals.md`.
 
 Entrega concluida:
@@ -105,7 +105,7 @@ Entrega concluida:
 - F2A-02 motor generico de regras declarativas.
 - Usar `docs/tasks/F2A-02-generic-rule-engine.md`.
 - Nao criar regras de pneu ainda.
-- Validacao local: `npm run typecheck`, `npm test` 170/170 e `npm run build`.
+- Validacao local: `npm run typecheck`, `npm test` 192/192 e `npm run build`.
 - Supabase real: migration `0010_analytics_ruleset_auditability.sql` aplicada e validada.
 - Validado no banco: `ruleset_hash` em hints/facts, `pattern_id NOT NULL`, constraint `hints_dedup_key`, 0 `pattern_id` nulo e dedup de hints via `ON CONFLICT`.
 
@@ -212,7 +212,7 @@ Auditoria tecnica completa + hardening deployado antes de producao plena.
 ### Pendente da F1.5 (antes de producao plena):
 
 1. Zod permissivo nos mappers criticos — schemas com `.passthrough()` nos mappers de contact, conversation e message.
-2. Limpar body legado do handler e migrar testes para caminho real de producao.
+2. ~~Limpar body legado do handler e migrar testes para caminho real de producao.~~ Concluido em 28/04/2026.
 
 ## Harness de integracao
 

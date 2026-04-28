@@ -25,7 +25,7 @@ negocio e, no futuro, agentes LLM. O Farejador em si nao e o agente.
 
 Validacao atual:
 
-- `npm test`: 170/170.
+- `npm test`: 192/192.
 - `npm run typecheck`: verde.
 - `npm run build`: verde.
 - Webhook real, replay real, reconcile real e dois workers concorrentes ja foram validados.

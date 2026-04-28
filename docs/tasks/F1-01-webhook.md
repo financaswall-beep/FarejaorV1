@@ -11,8 +11,7 @@ HMAC e timestamp, deduplica, persiste em `raw.raw_events` e responde 2xx rápido
 - Rota `POST /webhooks/chatwoot` em `src/webhooks/chatwoot.route.ts`
 - Handler em `src/webhooks/chatwoot.handler.ts`
 - Validação HMAC em `src/webhooks/chatwoot.hmac.ts`
-- Repository de raw events em `src/persistence/raw-events.repository.ts`
-- Repository do bouncer em `src/persistence/delivery-seen.repository.ts`
+- Repository de raw events em `src/persistence/raw-events.repository.ts` (inclui dedup via CTE `claim` em `raw.delivery_seen`)
 - Boot do pool `pg` em `src/persistence/db.ts`
 - Validação de env vars em `src/shared/config/env.ts`
 - Setup de logger em `src/shared/logger.ts`
@@ -32,8 +31,7 @@ HMAC e timestamp, deduplica, persiste em `raw.raw_events` e responde 2xx rápido
 - `src/webhooks/chatwoot.handler.ts`
 - `src/webhooks/chatwoot.hmac.ts`
 - `src/persistence/db.ts`
-- `src/persistence/raw-events.repository.ts`
-- `src/persistence/delivery-seen.repository.ts`
+- `src/persistence/raw-events.repository.ts` (inclui dedup via CTE `claim` em `raw.delivery_seen`)
 - `src/shared/config/env.ts`
 - `src/shared/logger.ts`
 
