@@ -29,7 +29,7 @@ A Fase 3 avançou significativamente além do que o documento original registrav
 | 02 | Princípios Operacionais | ✅ Completo |
 | 03 | Mapa de Dados | ✅ Completo |
 | 04 | Blocos do Banco | ✅ Completo |
-| 05 | Fact Ledger (Organizadora) | ✅ Completo — ⚠️ ver nota abaixo |
+| 05 | Fact Ledger (Organizadora) | Completo e alinhado ao codigo |
 | 06 | Agent State (Atendente) | ✅ Completo |
 | 07 | Commerce Grafo Veicular | ✅ Completo |
 | 08 | Business Intelligence | ✅ Completo |
@@ -44,11 +44,11 @@ A Fase 3 avançou significativamente além do que o documento original registrav
 | 17 | Mapa Português-Inglês | ✅ Completo |
 | 18 | Diagrama ER | ✅ Completo |
 
-> **⚠️ Nota doc 05:** O doc 05 diz que a Organizadora escreve em
-> `analytics.linguistic_hints` e `analytics.conversation_classifications`.
-> A implementação real (2026-04-29) escreve somente em
-> `analytics.conversation_facts` + `analytics.fact_evidence`.
-> O doc 05 precisa ser corrigido para refletir o comportamento implementado.
+> **Nota doc 05:** corrigido em 2026-04-29. A Organizadora LLM escreve
+> somente em `analytics.conversation_facts`, `analytics.fact_evidence` e
+> `ops.agent_incidents`. `analytics.linguistic_hints` e
+> `analytics.conversation_classifications` continuam como saidas deterministicas
+> da F2A, nao da Organizadora LLM atual.
 
 ---
 
@@ -167,7 +167,7 @@ Webhook Chatwoot
 
 ## 8. Próximos Passos
 
-1. **Redeploy farejador-pneus** — fix do SAVEPOINT (`851fdd5`) precisa ir para prod
+1. **Redeploy farejador-pneus** - hardening da Organizadora precisa ir para prod
 2. **Teste com conversa longa** — endereço, preço, cidade para validar todos os fatos
 3. **Importar dados de Commerce** — produtos, veículos, compatibilidades, preços (planilha)
 4. **Shadow Assistido** — Wallace atende manualmente por 5 semanas, Organizadora coleta fatos
@@ -192,3 +192,14 @@ Webhook Chatwoot
 ---
 
 *Documento atualizado por Opus em 2026-04-29 para refletir estado real de implementação.*
+
+---
+
+## Atualizacao Codex 2026-04-29
+
+- `0022_conversation_facts_append_ledger.sql` foi aplicada em prod em 2026-04-29.
+- A Organizadora agora valida `from_message_id` e `evidence_text` literal antes de gravar fatos.
+- Incidentes fatais da Organizadora passam a ser gravados fora da transacao sujeita a rollback.
+- `markJobRunning` passa a ser commitado antes do processamento do job.
+- Supersedencia de fatos considera `truth_type` e `confidence_level`; fato fraco nao derruba fato forte.
+- Scripts locais com tokens/endpoints (`simulate-chatwoot.*`, `chatwoot-chat.*`, `audit-*.js`) foram adicionados ao `.gitignore`.

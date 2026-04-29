@@ -257,7 +257,7 @@ ORGANIZADORA_DEBOUNCE_MS=90000
 docs/CHECKLIST.md                                    → checklist master de tudo
 docs/DATA_DICTIONARY.md                              → dicionário de todas as tabelas
 docs/phase3-agent-architecture/00-estado-de-implementacao.md → estado atual (atualizado)
-docs/phase3-agent-architecture/05-fact-ledger-organizadora.md → ⚠️ desatualizado (diz que Organizadora escreve em linguistic_hints — não é mais verdade)
+docs/phase3-agent-architecture/05-fact-ledger-organizadora.md -> atualizado: Organizadora LLM escreve facts/evidence; hints/classifications sao F2A
 docs/phase3-agent-architecture/16-planejamento-tabelas-em-portugues.md → todas as tabelas em português simples
 docs/adr/ADR-004-fase-3-arquitetura-agente.md        → decisões de arquitetura da Fase 3
 segments/moto-pneus/extraction-schema.json           → schema de extração do segmento
@@ -267,7 +267,7 @@ segments/moto-pneus/extraction-schema.json           → schema de extração do
 
 ## Próximas tarefas prioritárias
 
-1. **Redeploy farejador-pneus** para pegar fix do SAVEPOINT (`851fdd5`) — commit já existe, só falta deploy
+1. **Redeploy farejador-pneus** para pegar hardening da Organizadora (evidencia literal, incidentes persistentes, supersedencia segura)
 2. **Teste com conversa longa** (endereço + preço + cidade) para validar todos os fatos salvos
 3. **Importar dados de Commerce** via planilha — sem dados de produtos/preços/estoque, a Atendente futura não funciona
 4. **Shadow Assistido** — Wallace atende manualmente por ~5 semanas, Organizadora coleta fatos reais
@@ -277,3 +277,14 @@ segments/moto-pneus/extraction-schema.json           → schema de extração do
 ---
 
 *Gerado por Opus em 2026-04-29*
+
+---
+
+## Atualizacao Codex 2026-04-29 - hardening Organizadora
+
+- `0022_conversation_facts_append_ledger.sql` aplicada em Supabase prod em 2026-04-29.
+- Organizadora valida `from_message_id` contra mensagens da conversa e exige `evidence_text` literal antes de gravar facts.
+- Incidentes fatais (`llm_timeout`, `llm_api_error`, resposta invalida) sao gravados fora da transacao sujeita a rollback.
+- `markJobRunning` e commitado antes do processamento para o job nao ficar eternamente `pending` se o worker morrer durante a chamada LLM.
+- Supersedencia de facts considera `truth_type` e `confidence_level`; fato fraco entra no ledger ja superseded pelo fato forte ativo.
+- `simulate-chatwoot.*`, `chatwoot-chat.*` e `audit-*.js` estao no `.gitignore` por conterem dados locais sensiveis.

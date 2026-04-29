@@ -37,10 +37,26 @@ import {
 import { buildOrganizadoraPrompt, SCHEMA_VERSION } from './prompt.js';
 import { parseOrganizadoraResponse } from '../shared/zod/llm-organizadora.js';
 import { validateFactValue } from '../shared/zod/fact-keys.js';
+import type { IncidentInsert } from '../shared/repositories/ops-phase3.repository.js';
+import { validateFactEvidence } from './evidence.js';
 
 const WORKER_ID = `organizadora-${randomUUID().slice(0, 8)}`;
 const EXTRACTOR_SOURCE = 'llm_openai_organizadora_v1';
 const MIN_CONFIDENCE = 0.55;
+
+async function logIncidentCommitted(incident: IncidentInsert): Promise<void> {
+  const incidentClient = await pool.connect();
+  try {
+    await incidentClient.query('BEGIN');
+    await logIncident(incidentClient, incident);
+    await incidentClient.query('COMMIT');
+  } catch (err) {
+    await incidentClient.query('ROLLBACK').catch(() => {});
+    logger.error({ err, incident_type: incident.incident_type }, 'organizadora: failed to persist incident');
+  } finally {
+    incidentClient.release();
+  }
+}
 
 // ------------------------------------------------------------------
 // Processamento de um job
@@ -89,7 +105,7 @@ async function processJob(
     const incidentType = isTimeout ? 'llm_timeout' : 'llm_api_error';
     const errorMessage = err instanceof Error ? err.message : String(err);
 
-    await logIncident(client, {
+    await logIncidentCommitted({
       environment,
       conversation_id: conversationId,
       agent_turn_id: null,
@@ -115,7 +131,7 @@ async function processJob(
   const parsed = parseOrganizadoraResponse(llmResult.content, SCHEMA_VERSION);
 
   if (!parsed.ok) {
-    await logIncident(client, {
+    await logIncidentCommitted({
       environment,
       conversation_id: conversationId,
       agent_turn_id: null,
@@ -188,6 +204,26 @@ async function processJob(
     //     Se um fato falhar (trigger, constraint), só ele é descartado.
     //     Sem SAVEPOINT, um erro SQL aborta a transação inteira e todos
     //     os fatos seguintes falham com "current transaction is aborted".
+    const evidenceResult = validateFactEvidence(fact, messages);
+    if (!evidenceResult.ok) {
+      await logIncident(client, {
+        environment,
+        conversation_id: conversationId,
+        agent_turn_id: null,
+        incident_type: evidenceResult.error === 'evidence_not_literal' ? 'evidence_not_literal' : 'schema_violation',
+        severity: 'medium',
+        details: {
+          job_id: jobId,
+          fact_key: fact.fact_key,
+          from_message_id: fact.from_message_id,
+          evidence_text: fact.evidence_text,
+          error: evidenceResult.error,
+        },
+      });
+      rejectedCount++;
+      continue;
+    }
+
     const sp = `sp_fact_${savedCount + rejectedCount}`;
     try {
       await client.query(`SAVEPOINT ${sp}`);
@@ -239,6 +275,7 @@ export async function pollAndOrganize(): Promise<void> {
 
   try {
     client = await pool.connect();
+
     await client.query('BEGIN');
 
     const job = await pickEnrichmentJob(client, env.FAREJADOR_ENV);
@@ -254,8 +291,10 @@ export async function pollAndOrganize(): Promise<void> {
     );
 
     await markJobRunning(client, job.id, WORKER_ID);
+    await client.query('COMMIT');
 
     try {
+      await client.query('BEGIN');
       await processJob(client, job.environment as Environment, job.id, job.conversation_id);
       await client.query('COMMIT');
     } catch (err) {

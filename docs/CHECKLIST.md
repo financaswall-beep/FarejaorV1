@@ -205,6 +205,7 @@ Pendente da F1.5:
 - [x] `0019_ops_phase3_additions.sql` (atendente_jobs, enrichment_jobs upgrade, unhandled_messages, agent_incidents + funcoes enqueue)
 - [x] `0020_vehicle_fitment_validation.sql` (validacoes finais + helpers find_compatible_tires, resolve_neighborhood, build_escalation_summary + agent_dashboard)
 - [x] `0021_environment_match_guards.sql` (funcao parametrica + 30+ triggers env_match cross-table; enforce prod/test no banco)
+- [x] `0022_conversation_facts_append_ledger.sql` (libera ledger append-only real em conversation_facts; aplicada em Supabase prod em 2026-04-29)
 - [x] Cada migration idempotente (CREATE/ALTER IF NOT EXISTS)
 - [x] Migrations 0013-0021 aplicadas em Supabase prod (2026-04-29) — incluindo fix de palavra reservada `position` → `fitment_position` em 0020
 - [ ] Testes de integracao por migration (Kimi escreve depois)
@@ -240,6 +241,9 @@ Pendente da F1.5:
 **Bugs encontrados e corrigidos em 2026-04-29:**
 - [x] `src/shared/llm-clients/openai.ts`: `max_tokens` → `max_completion_tokens` (gpt-5.x rejeita `max_tokens` com HTTP 400)
 - [x] `src/organizadora/worker.ts`: SAVEPOINT por fato no loop de gravação — sem isso, um erro SQL abortava a transação inteira e todos os fatos seguintes falhavam com "current transaction is aborted"
+- [x] `src/organizadora/worker.ts`: incidentes fatais da Organizadora agora persistem fora da transacao que pode dar rollback; `markJobRunning` passa a ser commitado antes do processamento.
+- [x] `src/organizadora/worker.ts`: valida `from_message_id` dentro da conversa e `evidence_text` literal antes de gravar fact/evidence.
+- [x] `src/shared/repositories/analytics-phase3.repository.ts`: supersedencia deixa de ser cega; fato fraco nao derruba fato forte em `current_facts`.
 
 **Teste manual em prod (2026-04-29):**
 - [x] Webhook real Chatwoot → Farejador → Supabase validado

@@ -55,3 +55,8 @@ temp/
 
 # Claude/agent artifacts (session-local, not repo state)
 .claude/
+
+# Local audit/simulator scripts may contain temporary tokens or endpoints.
+audit-*.js
+simulate-chatwoot.*
+chatwoot-chat.*
