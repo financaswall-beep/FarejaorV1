@@ -206,7 +206,7 @@ Pendente da F1.5:
 - [x] `0020_vehicle_fitment_validation.sql` (validacoes finais + helpers find_compatible_tires, resolve_neighborhood, build_escalation_summary + agent_dashboard)
 - [x] `0021_environment_match_guards.sql` (funcao parametrica + 30+ triggers env_match cross-table; enforce prod/test no banco)
 - [x] Cada migration idempotente (CREATE/ALTER IF NOT EXISTS)
-- [ ] Cada migration validada em Postgres real (proximo passo do Wallace: aplicar em Supabase staging)
+- [x] Migrations 0013-0021 aplicadas em Supabase prod (2026-04-29) — incluindo fix de palavra reservada `position` → `fitment_position` em 0020
 - [ ] Testes de integracao por migration (Kimi escreve depois)
 
 ### 7.3 Etapa C - Codigo TypeScript
@@ -229,12 +229,23 @@ Pendente da F1.5:
 - [x] `src/organizadora/index.ts` — entrypoint com graceful shutdown
 - [x] `src/shared/config/env.ts` — ORGANIZADORA_ENABLED, OPENAI_API_KEY, OPENAI_MODEL, debounce, poll interval
 - [x] `.env.example` — variáveis da Organizadora documentadas
+- [x] `src/app/server.ts` — integra startOrganizadora() no boot quando ORGANIZADORA_ENABLED=true
 - [x] `npm run typecheck` verde (0 erros)
 - [x] `npm test` verde (193/193)
+- [x] `simulate-chatwoot.bat` / `simulate-chatwoot.cjs` — simulador direto ao Farejador (bypassa Chatwoot)
+- [x] `chatwoot-chat.bat` / `chatwoot-chat.cjs` — simulador via API Chatwoot real (conversas aparecem no Chatwoot)
 - [ ] `src/shared/validators/` - SayValidator, ActionValidator (Atendente — próxima etapa)
 - [ ] `src/atendente/` - worker async (Atendente — após Shadow Assistido)
-- [ ] Migrations 0013-0021 aplicadas em staging (tarefa do Wallace)
-- [ ] Teste manual da Organizadora em environment=test com conversa real
+
+**Bugs encontrados e corrigidos em 2026-04-29:**
+- [x] `src/shared/llm-clients/openai.ts`: `max_tokens` → `max_completion_tokens` (gpt-5.x rejeita `max_tokens` com HTTP 400)
+- [x] `src/organizadora/worker.ts`: SAVEPOINT por fato no loop de gravação — sem isso, um erro SQL abortava a transação inteira e todos os fatos seguintes falhavam com "current transaction is aborted"
+
+**Teste manual em prod (2026-04-29):**
+- [x] Webhook real Chatwoot → Farejador → Supabase validado
+- [x] Organizadora processou conversa real e extraiu fatos: `moto_modelo=Bros` (93%), `posicao_pneu=traseiro` (78%)
+- [x] Evidence corretamente vinculada (frase exata da conversa como evidência)
+- [ ] Teste com conversa longa completa (endereço, preço, cidade) após fix do SAVEPOINT
 
 ### 7.4 Etapa D - Shadow Assistido (5 semanas)
 
@@ -265,8 +276,10 @@ Pendente da F1.5:
 
 ### 7.7 Deploy
 
+- [x] Organizadora integrada ao servidor Farejador via `ORGANIZADORA_ENABLED=true` (um serviço único no Coolify)
+- [x] Deploy em prod validado em 2026-04-29 (Coolify + Supabase + OpenAI gpt-5.4)
+- [x] `NIXPACKS_NODE_VERSION=22` configurado (evita Node 18 EOL)
 - [ ] 3 entrypoints definidos: `dist/farejador.js`, `dist/atendente.js`, `dist/organizadora.js`
-- [ ] Mesma imagem Docker, 3 servicos no Coolify (preferido)
 - [ ] Healthcheck por servico (`/healthz` em portas separadas)
 - [ ] Logs estruturados JSON com campo `service`
 - [ ] Metricas: latencia webhook->200, latencia job->resposta, backlog por fila
