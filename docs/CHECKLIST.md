@@ -273,10 +273,12 @@ Pendente da F1.5:
 
 ### 7.6 Etapa F - BI (Rei dos Dados)
 
-- [ ] Views analiticas (demanda_por_bairro, motivo_perda, taxa_conversao, etc)
+- [x] `0023_analytics_marts_v1.sql` aplicado em Supabase prod (2026-04-29): schema `analytics_marts.*`
+- [x] Views v1 criadas e validadas: demanda por pneu, bairro/municipio, horario, objecao de preco, concorrentes, intencao e qualidade da Organizadora
+- [x] Doc `20-analytics-marts-v1.md` criado para explicar uso e expansao
 - [ ] Marts agregadas com refresh diario
 - [ ] Dashboard (Metabase ou similar)
-- [ ] Doc 08 (`08-business-intelligence-data-king.md`) virar SQL real
+- [ ] Materializar as views mais usadas depois de volume real
 
 ### 7.7 Deploy
 

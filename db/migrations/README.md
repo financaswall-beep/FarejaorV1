@@ -28,6 +28,7 @@ Ordem de execução:
 21. `0021_environment_match_guards.sql` — função paramétrica `ops.validate_env_match` + 30+ triggers que enforçam invariante "prod nunca cruza com test" via FK cross-table. Também adiciona `ops.enforce_environment_immutable` + ~25 triggers que bloqueiam UPDATE de environment (sem isso, env_match seria burlado mudando só environment). Cobre todas as tabelas novas da Fase 3. Tabelas legadas ficam fora do escopo (ver TODO em `0022_environment_immutable_legacy.sql` futura).
 
 22. `0022_conversation_facts_append_ledger.sql` - remove UNIQUE legada de `analytics.conversation_facts` que bloqueava ledger append-only por mesma chave/source/version e cria dedup estreito para repeticao exata da Organizadora.
+23. `0023_analytics_marts_v1.sql` - cria schema `analytics_marts.*` com views iniciais de BI: demanda por pneu, bairro/municipio, horario, objecao de preco, concorrentes, intencao e qualidade da Organizadora.
 
 ## Convenções
 
@@ -82,7 +83,7 @@ O projeto evolui em 3 fases. Responsabilidades **não** atravessam fronteira de 
 
 ### Fase 3 — Agente atendente
 
-Migrations 0013-0022 nesta pasta criam o schema `commerce.*` (catálogo + pedidos), `agent.*` (estado vivo do atendimento) e estendem `analytics.*` e `ops.*`.
+Migrations 0013-0023 nesta pasta criam o schema `commerce.*` (catálogo + pedidos), `agent.*` (estado vivo do atendimento), estendem `analytics.*`/`ops.*` e adicionam `analytics_marts.*` para BI inicial.
 
 **Topologia (ver `docs/phase3-agent-architecture/14-topologia-de-execucao.md`):**
 
