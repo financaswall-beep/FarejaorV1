@@ -25,7 +25,7 @@ Atendente Worker consome job
         ↓
 Context Builder monta pacote pequeno (le agent.*, analytics.*, commerce.*)
         ↓
-Router deterministico escolhe skill conversacional
+Planner constrained escolhe skill conversacional a partir do estado reentrante
         ↓
 LLM Atendente gera { say, actions }
         ↓
@@ -139,10 +139,14 @@ Cliente pode:
 - pular para objecao: "achei caro";
 - pedir humano a qualquer momento.
 
-O router decide a proxima skill olhando:
+Na v1 reentrante, o Planner constrained decide a proxima skill olhando:
 
 - estado consolidado;
 - mensagem atual;
 - hints fortes da mensagem atual;
 - carrinho;
 - disponibilidade de dados.
+
+O Planner e read-only: ele nao muda estado. Mutacao continua passando por
+`actions` validadas e action handlers. O contrato atual do estado esta em
+[21 - Atendente v1: State Design](21-atendente-v1-state-design.md).

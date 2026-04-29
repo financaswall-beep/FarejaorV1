@@ -50,7 +50,7 @@ Action handler nunca executa sem passar pelos dois validators.
 8. `escalar_humano`
 9. `responder_geral`
 
-## Router deterministico
+## Router deterministico / Planner constrained
 
 Router fica em TypeScript.
 
@@ -66,6 +66,24 @@ Motivo:
 ```text
 logica condicional em JSON vira DSL ruim
 ```
+
+### Atualizacao para Atendente v1
+
+O Sprint 1 da Atendente v1 preserva o principio de fluxo controlado, mas o
+roteamento conversacional passa a ser planejado em cima de um estado reentrante
+documentado em [21 - Atendente v1: State Design](21-atendente-v1-state-design.md).
+
+Na pratica:
+
+- regras deterministicas continuam cuidando de validacao, actions, tools e
+  seguranca;
+- o Planner futuro sera read-only e constrained por enum de skills;
+- nenhuma LLM muta estado diretamente;
+- mutacao continua passando por `ActionValidator` e action handlers.
+
+Portanto, o termo "Router deterministico" aqui deve ser lido como o desenho
+base. A v1 reentrante usa Planner constrained para escolher skill, mas mantem
+o pipeline fixo e validado. O Planner e read-only; nenhuma LLM muta estado.
 
 ## Prioridade da mensagem atual
 
@@ -156,4 +174,3 @@ Tipos iniciais:
 - router_no_skill_matched;
 - evidence_not_literal;
 - schema_violation.
-

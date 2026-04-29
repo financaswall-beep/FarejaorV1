@@ -21,6 +21,20 @@ Slot e dado operacional que precisa existir pra fechar o pedido.
 
 Se perder, o cliente teria que repetir.
 
+## Nota v1 reentrante
+
+O modelo abaixo foi refinado no Sprint 1 da Atendente v1. A versao atual nao
+substitui `agent.cart_current`, `agent.order_drafts` ou
+`agent.pending_confirmations`; ela adiciona:
+
+- `agent.session_items`, para interesses em discussao antes de virarem carrinho;
+- `agent.session_slots`, para slots com `source`, `confidence`, `stale` e
+  `requires_confirmation`;
+- `ConversationState` montado pelo Context Builder a partir das tabelas.
+
+Ver [21 - Atendente v1: State Design](21-atendente-v1-state-design.md) para o
+contrato atual do Sprint 1.
+
 Slots canonicos do v1:
 
 - nome do cliente;

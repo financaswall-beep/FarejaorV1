@@ -15,6 +15,13 @@
  */
 
 import { z } from 'zod';
+import {
+  sessionItemStatusSchema,
+  sessionSlotKeySchema,
+  slotScopeSchema,
+  slotSourceSchema,
+  staleFlagSchema,
+} from './agent-state.js';
 
 // ------------------------------------------------------------------
 // Cart actions
@@ -120,6 +127,84 @@ export const selectSkillSchema = z.object({
 });
 
 // ------------------------------------------------------------------
+// Atendente v1 reentrant state actions
+// ------------------------------------------------------------------
+
+const stateActionBaseSchema = z.object({
+  action_id: z.string().uuid(),
+  turn_index: z.number().int().min(0),
+  emitted_at: z.string().datetime(),
+  emitted_by: z.enum(['generator', 'system', 'human_override']),
+});
+
+export const updateSlotSchema = stateActionBaseSchema.extend({
+  type: z.literal('update_slot'),
+  scope: slotScopeSchema,
+  item_id: z.string().uuid().nullable(),
+  slot_key: sessionSlotKeySchema,
+  value: z.unknown(),
+  source: slotSourceSchema,
+  confidence: z.number().min(0).max(1),
+  evidence_text: z.string().nullable().optional(),
+  set_by_message_id: z.string().uuid().nullable().optional(),
+  set_by_skill: z.string().nullable().optional(),
+});
+
+export const markSlotStaleSchema = stateActionBaseSchema.extend({
+  type: z.literal('mark_slot_stale'),
+  scope: slotScopeSchema,
+  item_id: z.string().uuid().nullable(),
+  slot_key: sessionSlotKeySchema,
+  stale: staleFlagSchema.exclude(['fresh']),
+  reason: z.string().min(1).max(500),
+});
+
+export const createItemSchema = stateActionBaseSchema.extend({
+  type: z.literal('create_item'),
+  item_id: z.string().uuid(),
+  make_active: z.boolean().default(true),
+});
+
+export const setActiveItemSchema = stateActionBaseSchema.extend({
+  type: z.literal('set_active_item'),
+  item_id: z.string().uuid(),
+});
+
+export const updateItemStatusSchema = stateActionBaseSchema.extend({
+  type: z.literal('update_item_status'),
+  item_id: z.string().uuid(),
+  status: sessionItemStatusSchema,
+});
+
+export const recordOfferSchema = stateActionBaseSchema.extend({
+  type: z.literal('record_offer'),
+  offer_id: z.string().uuid(),
+  item_id: z.string().uuid(),
+  products: z.array(z.record(z.unknown())).min(1).max(10),
+  expires_at: z.string().datetime(),
+});
+
+export const invalidateOfferSchema = stateActionBaseSchema.extend({
+  type: z.literal('invalidate_offer'),
+  offer_id: z.string().uuid().optional(),
+  reason: z.string().min(1).max(500),
+});
+
+export const addObjectionSchema = stateActionBaseSchema.extend({
+  type: z.literal('add_objection'),
+  objection_type: z.string().min(1).max(100),
+  source_message_id: z.string().uuid(),
+});
+
+export const unsupportedObservationSchema = stateActionBaseSchema.extend({
+  type: z.literal('unsupported_observation'),
+  raw_text: z.string().min(1).max(2000),
+  proposed_fact_key: z.string().nullable(),
+  proposed_fact_value: z.unknown(),
+  requires_human_review: z.literal(true),
+});
+
+// ------------------------------------------------------------------
 // Discriminated union — the canonical AgentAction type
 // ------------------------------------------------------------------
 
@@ -132,6 +217,15 @@ export const agentActionSchema = z.discriminatedUnion('type', [
   requestConfirmationSchema,
   escalateSchema,
   selectSkillSchema,
+  updateSlotSchema,
+  markSlotStaleSchema,
+  createItemSchema,
+  setActiveItemSchema,
+  updateItemStatusSchema,
+  recordOfferSchema,
+  invalidateOfferSchema,
+  addObjectionSchema,
+  unsupportedObservationSchema,
 ]);
 
 export type AgentAction = z.infer<typeof agentActionSchema>;
@@ -143,6 +237,15 @@ export type UpdateDraftAction = z.infer<typeof updateDraftSchema>;
 export type RequestConfirmationAction = z.infer<typeof requestConfirmationSchema>;
 export type EscalateAction = z.infer<typeof escalateSchema>;
 export type SelectSkillAction = z.infer<typeof selectSkillSchema>;
+export type UpdateSlotAction = z.infer<typeof updateSlotSchema>;
+export type MarkSlotStaleAction = z.infer<typeof markSlotStaleSchema>;
+export type CreateItemAction = z.infer<typeof createItemSchema>;
+export type SetActiveItemAction = z.infer<typeof setActiveItemSchema>;
+export type UpdateItemStatusAction = z.infer<typeof updateItemStatusSchema>;
+export type RecordOfferAction = z.infer<typeof recordOfferSchema>;
+export type InvalidateOfferAction = z.infer<typeof invalidateOfferSchema>;
+export type AddObjectionAction = z.infer<typeof addObjectionSchema>;
+export type UnsupportedObservationAction = z.infer<typeof unsupportedObservationSchema>;
 
 // ------------------------------------------------------------------
 // Full LLM Atendente response envelope

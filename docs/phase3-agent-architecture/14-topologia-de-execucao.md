@@ -48,12 +48,17 @@ Responsabilidades:
 
 - pegar job em milissegundos (poll curto ou listen/notify);
 - montar contexto via Context Builder;
-- escolher skill via Router deterministico;
+- escolher skill via Planner constrained sobre o estado reentrante;
 - chamar LLM Atendente;
 - aplicar Say Validator + Action Validator;
 - executar action handlers (gravam `agent.*`);
 - postar resposta no Chatwoot via API;
 - gravar `agent.turns` (idempotente).
+
+Nota: o Sprint 1 da Atendente implementa apenas a fundacao deterministica local
+do estado reentrante (`session_items`, `session_slots`, `applyAction` e
+ActionValidator inicial). O Worker, Planner LLM, Generator e envio Chatwoot
+ainda nao existem.
 
 Nao pode:
 

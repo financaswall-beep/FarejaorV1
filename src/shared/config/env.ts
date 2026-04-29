@@ -24,6 +24,8 @@ const envSchema = z.object({
   OPENAI_TIMEOUT_MS: z.string().transform(Number).pipe(z.number().int().min(1000)).default('30000'),
   ORGANIZADORA_DEBOUNCE_SECONDS: z.string().transform(Number).pipe(z.number().int().min(10)).default('90'),
   ORGANIZADORA_POLL_INTERVAL_MS: z.string().transform(Number).pipe(z.number().int().min(1000)).default('5000'),
+  PLANNER_LLM_ENABLED: booleanStringSchema,
+  PLANNER_MODEL: z.string().min(1).default('gpt-4o-mini'),
   SKIP_EVENT_TYPES: z
     .string()
     .default('')

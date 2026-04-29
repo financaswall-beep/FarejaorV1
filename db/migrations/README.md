@@ -29,6 +29,8 @@ Ordem de execução:
 
 22. `0022_conversation_facts_append_ledger.sql` - remove UNIQUE legada de `analytics.conversation_facts` que bloqueava ledger append-only por mesma chave/source/version e cria dedup estreito para repeticao exata da Organizadora.
 23. `0023_analytics_marts_v1.sql` - cria schema `analytics_marts.*` com views iniciais de BI: demanda por pneu, bairro/municipio, horario, objecao de preco, concorrentes, intencao e qualidade da Organizadora.
+24. `0024_atendente_v1_state_extensions.sql` - extensoes aditivas para o Sprint 1 da Atendente v1: versionamento e idempotencia em `agent.session_current`/`agent.session_events`, novos `event_type`, `agent.session_items` e `agent.session_slots` para estado reentrante com procedencia.
+25. `0025_planner_foundation.sql` - base do Sprint 3 Planner: adiciona `planner_decided`, `aliases` em `commerce.vehicle_models`, `commerce.resolve_vehicle_model` e realinha helpers para `fitment_position`, `fitment_source`, `match_similarity`.
 
 ## Convenções
 

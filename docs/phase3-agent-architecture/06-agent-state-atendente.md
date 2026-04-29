@@ -12,6 +12,25 @@ Nao e interpretacao historica.
 
 E o estado operacional do agente.
 
+## Nota v1 reentrante
+
+Este documento descreve o desenho base criado em `0016_agent_layer.sql`.
+
+Para a Atendente v1, o Sprint 1 **estende** este desenho sem substituir as
+tabelas existentes. A extensao aprovada esta em
+[21 - Atendente v1: State Design](21-atendente-v1-state-design.md):
+
+- `agent.session_current` ganha `version` e `turn_index`;
+- `agent.session_events` ganha `action_id`, `turn_index` e versao resultante;
+- `agent.session_items` registra interesses em discussao antes do carrinho;
+- `agent.session_slots` registra slots com procedencia e stale flags;
+- `ConversationState` e montado pelo repositorio a partir das tabelas, nao salvo
+  como um `state jsonb` monolitico.
+
+Assim, `agent.*` continua relacional e auditavel, mas passa a suportar
+slot-filling reentrante: o cliente pode ir e voltar no funil sem prender a
+Atendente em uma maquina de estados linear.
+
 ## Tabelas
 
 ### `agent.session_events`
@@ -147,4 +166,3 @@ No v1, a Atendente pode montar proposta de pedido, mas nao cria pedido automatic
 Acao `create_order` vira escalacao para humano fechar.
 
 Em v2, o handler transacional pode ser ativado sem mudar o schema.
-

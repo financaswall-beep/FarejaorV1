@@ -105,11 +105,10 @@ criar estrutura -> ligar Organizadora -> Shadow Assistido por 5 semanas -> ligar
 
 Portanto:
 
-- `agent.*` continua projetado;
-- Router e skills continuam projetados;
-- validadores continuam projetados;
-- Atendente Worker continua projetado;
-- apenas fica desligado no primeiro periodo.
+- `agent.*` continua projetado e a fundacao reentrante do Sprint 1 ja existe localmente;
+- Planner constrained, skills e validadores completos continuam projetados;
+- Atendente Worker continua nao implementado;
+- qualquer runtime da Atendente permanece desligado no primeiro periodo.
 
 ## Como Wallace trabalha nesse periodo
 
