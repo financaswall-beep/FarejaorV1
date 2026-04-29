@@ -184,8 +184,13 @@ async function processJob(
       continue;
     }
 
-    // 5c. Gravar fact + evidence
+    // 5c. Gravar fact + evidence — SAVEPOINT por fato para isolar falhas
+    //     Se um fato falhar (trigger, constraint), só ele é descartado.
+    //     Sem SAVEPOINT, um erro SQL aborta a transação inteira e todos
+    //     os fatos seguintes falham com "current transaction is aborted".
+    const sp = `sp_fact_${savedCount + rejectedCount}`;
     try {
+      await client.query(`SAVEPOINT ${sp}`);
       await writeFactWithEvidence(
         client,
         {
@@ -207,10 +212,12 @@ async function processJob(
           extractor_version: SCHEMA_VERSION,
         },
       );
+      await client.query(`RELEASE SAVEPOINT ${sp}`);
       savedCount++;
     } catch (err) {
-      logger.error({ err, fact_key: fact.fact_key, job_id: jobId }, 'organizadora: failed to write fact');
-      // Não aborta o loop — grava o que conseguir
+      await client.query(`ROLLBACK TO SAVEPOINT ${sp}`).catch(() => {});
+      logger.error({ err, fact_key: fact.fact_key, job_id: jobId }, 'organizadora: failed to write fact, rolled back savepoint');
+      rejectedCount++;
     }
   }
 
