@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { PoolClient } from 'pg';
 import {
   buscarCompatibilidade,
@@ -239,5 +239,38 @@ describe('commerce tools deterministicas da Atendente', () => {
     ]);
     expect(client.calls[0]!.text).toContain('commerce.store_policies');
     expect(client.calls[0]!.values).toEqual(['test', ['desconto_maximo']]);
+  });
+
+  it('buscarPoliticaComercial ignora policy_key desconhecida sem abortar conhecidas', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const client = clientWithRows([
+      [
+        {
+          policy_key: 'desconto_maximo',
+          policy_value: { pct: 5 },
+          description: 'Limite de desconto',
+          policy_version: 'v1',
+        },
+        {
+          policy_key: 'valor_minimo_pedido',
+          policy_value: { min_brl: 50 },
+          description: 'Nova politica ainda sem schema',
+          policy_version: 'v1',
+        },
+      ],
+    ]);
+
+    const result = await buscarPoliticaComercial(client, { environment: 'test' });
+
+    expect(result).toEqual([
+      {
+        policy_key: 'desconto_maximo',
+        policy_value: { pct: 5 },
+        description: 'Limite de desconto',
+        policy_version: 'v1',
+      },
+    ]);
+    expect(warn).toHaveBeenCalledWith('[atendente] unsupported_policy_key:valor_minimo_pedido');
+    warn.mockRestore();
   });
 });

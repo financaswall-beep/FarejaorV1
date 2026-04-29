@@ -389,6 +389,12 @@ Entregaveis:
   - `PLANNER_MODEL=gpt-4o-mini` por default.
 - `buscarCompatibilidade` agora usa `commerce.resolve_vehicle_model`.
 - `buscarPoliticaComercial` valida `policy_value` por chave conhecida.
+- Correcoes pos-auditoria Opus:
+  - policy keys desconhecidas sao ignoradas com aviso, sem derrubar politicas
+    conhecidas;
+  - `Context Builder` nao transforma `planner_decided` antigo em falso
+    `recent_tool_results`; enquanto nao houver Executor/tool_executed, retorna
+    lista vazia.
 
 Validacao executada:
 
@@ -398,7 +404,7 @@ Validacao executada:
   - `resolve_neighborhood` retorna `match_similarity`;
   - `resolve_vehicle_model` existe com retorno esperado.
 - `npm run typecheck` verde.
-- `npm test` verde (239/239).
+- `npm test` verde (241/241).
 - `npm run test:integration -- tests/integration/atendente-commerce-tools.integration.test.ts`
   verde (5/5).
 - `npm run build` verde.

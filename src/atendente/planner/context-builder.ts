@@ -38,39 +38,24 @@ export async function buildPlannerContext(
     throw new Error(`planner_context_missing_state:${conversationId}`);
   }
 
-  const [messages, toolResults] = await Promise.all([
-    client.query<{
-      id: string;
-      sender_type: string;
-      message_type: string;
-      content: string;
-      sent_at: Date;
-    }>(
-      `SELECT id, sender_type, message_type, content, sent_at
-       FROM core.messages
-       WHERE environment = $1
-         AND conversation_id = $2
-         AND is_private = false
-         AND content IS NOT NULL
-         AND content != ''
-       ORDER BY sent_at DESC
-       LIMIT 10`,
-      [environment, conversationId],
-    ),
-    client.query<{
-      event_payload: Record<string, unknown>;
-      occurred_at: Date;
-    }>(
-      `SELECT event_payload, occurred_at
-       FROM agent.session_events
-       WHERE environment = $1
-         AND conversation_id = $2
-         AND event_type = 'planner_decided'
-       ORDER BY occurred_at DESC
-       LIMIT 3`,
-      [environment, conversationId],
-    ),
-  ]);
+  const messages = await client.query<{
+    id: string;
+    sender_type: string;
+    message_type: string;
+    content: string;
+    sent_at: Date;
+  }>(
+    `SELECT id, sender_type, message_type, content, sent_at
+     FROM core.messages
+     WHERE environment = $1
+       AND conversation_id = $2
+       AND is_private = false
+       AND content IS NOT NULL
+       AND content != ''
+     ORDER BY sent_at DESC
+     LIMIT 10`,
+    [environment, conversationId],
+  );
 
   return {
     environment,
@@ -89,12 +74,9 @@ export async function buildPlannerContext(
       'calcularFrete',
       'buscarPoliticaComercial',
     ],
-    recent_tool_results: toolResults.rows.map((row) => ({
-      tool: 'buscarProduto',
-      ok: true,
-      summary: JSON.stringify(row.event_payload).slice(0, 300),
-      occurred_at: row.occurred_at.toISOString(),
-    })),
+    // Sprint 3 ainda nao tem Executor nem evento tool_executed. Mentir
+    // planner_decided como se fosse resultado de tool confundiria o LLM.
+    recent_tool_results: [],
     derived_signals: state.derived_signals,
   };
 }

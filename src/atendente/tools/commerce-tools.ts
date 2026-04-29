@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import type { Environment } from '../../shared/types/chatwoot.js';
-import { parsePolicyValue } from '../policies/policy-schemas.js';
+import { isKnownPolicyKey, parsePolicyValue } from '../policies/policy-schemas.js';
 
 const tirePositionSchema = z.enum(['front', 'rear', 'both']);
 
@@ -416,10 +416,18 @@ export async function buscarPoliticaComercial(
     values,
   );
 
-  return result.rows.map((row) => ({
-    ...row,
-    policy_value: parsePolicyValue(row.policy_key, row.policy_value),
-  }));
+  return result.rows.flatMap((row) => {
+    if (!isKnownPolicyKey(row.policy_key)) {
+      console.warn(`[atendente] unsupported_policy_key:${row.policy_key}`);
+      return [];
+    }
+    return [
+      {
+        ...row,
+        policy_value: parsePolicyValue(row.policy_key, row.policy_value),
+      },
+    ];
+  });
 }
 
 function mapProdutoOferta(row: ProductFullRow): ProdutoOferta {
