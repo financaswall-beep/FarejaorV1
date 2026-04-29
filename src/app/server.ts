@@ -4,12 +4,14 @@ import { logger, loggerOptions } from '../shared/logger.js';
 import { pool } from '../persistence/db.js';
 import { registerRoutes } from './routes.js';
 import { startWorker } from '../normalization/worker.js';
+import { startOrganizadora } from '../organizadora/worker.js';
 
 const fastify = Fastify({
   logger: loggerOptions,
 });
 
 let stopWorker: (() => void) | null = null;
+let stopOrganizadora: (() => void) | null = null;
 
 fastify.addContentTypeParser(
   'application/json',
@@ -29,6 +31,7 @@ async function start(): Promise<void> {
   await registerRoutes(fastify);
 
   stopWorker = startWorker();
+  stopOrganizadora = startOrganizadora();
 
   const port = env.PORT;
   await fastify.listen({ port, host: '0.0.0.0' });
@@ -38,6 +41,7 @@ async function start(): Promise<void> {
 async function shutdown(signal: string): Promise<void> {
   fastify.log.info({ signal }, 'shutting down gracefully');
   stopWorker?.();
+  stopOrganizadora?.();
   await fastify.close();
   await pool.end();
   fastify.log.info('shutdown complete');
