@@ -32,6 +32,7 @@ Objetivo: desenhar a arquitetura do agente antes de codar, mantendo a separacao:
 16. [Planejamento das tabelas em portugues](16-planejamento-tabelas-em-portugues.md)
 17. [Mapa portugues -> ingles tecnico](17-mapa-portugues-ingles.md)
 18. [Diagrama ER (relacionamentos)](18-diagrama-er.md)
+19. [Guia de teste Chatwoot + Organizadora](19-guia-teste-chatwoot-organizadora.md)
 
 ## Apoio em outras pastas
 
