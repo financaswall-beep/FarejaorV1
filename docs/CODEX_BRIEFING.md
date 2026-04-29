@@ -5,6 +5,33 @@ Este documento é um briefing completo do que foi feito até hoje no projeto
 
 ---
 
+## EM QUE FASE ESTAMOS AGORA
+
+> **Fase 3 — Etapa D: Shadow Assistido**
+>
+> Data de início: 2026-04-29
+
+O que isso significa na prática:
+
+- A **Organizadora** (LLM que extrai fatos das conversas) está **em produção e funcionando**.
+- O **Wallace atende os clientes manualmente** no Chatwoot — sem bot respondendo ainda.
+- A cada conversa, a Organizadora roda em background e popula `analytics.conversation_facts` + `analytics.fact_evidence`.
+- O objetivo desta etapa é **calibrar a extração de fatos com conversas reais** antes de ligar o bot.
+
+O que NÃO está ligado ainda:
+- A LLM **Atendente** (bot que responde clientes) — `ATENDENTE_ENABLED` não existe nem no código.
+- Pedidos automáticos — tudo passa por confirmação humana.
+- BI / Dashboard — tabelas commerce ainda estão vazias.
+
+Critérios para sair do Shadow Assistido e iniciar a Atendente v1:
+- ~5 semanas de conversas reais coletadas (~3.500 conversas)
+- Taxa de `evidence_not_literal` abaixo de 5%
+- Taxa de `schema_violation` zerada
+- Taxonomia de classifications estável
+- Decisão final do Wallace
+
+---
+
 ## O que é o projeto
 
 Sistema backend em TypeScript que:
