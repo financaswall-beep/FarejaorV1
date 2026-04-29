@@ -21,7 +21,7 @@ describe('buildPlannerContext', () => {
           sent_at: new Date(baseTime),
         },
       ],
-    });
+    }).mockResolvedValueOnce({ rows: [] });
 
     const context = await buildPlannerContext({ query } as never, 'test', conversationId);
 
@@ -34,8 +34,37 @@ describe('buildPlannerContext', () => {
       },
     ]);
     expect(context.recent_tool_results).toEqual([]);
-    expect(query).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledTimes(2);
     expect(query.mock.calls[0]?.[0]).toContain('FROM core.messages');
+    expect(query.mock.calls[1]?.[0]).toContain("event_type IN ('tool_executed', 'tool_failed')");
+  });
+
+  it('le tool_executed e tool_failed reais como recent_tool_results', async () => {
+    const { buildPlannerContext } = await import('../../../../src/atendente/planner/context-builder.js');
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            event_type: 'tool_failed',
+            event_payload: { tool: 'calcularFrete', ok: false, error_message: 'bairro_nao_encontrado' },
+            occurred_at: new Date('2026-04-29T12:02:00.000Z'),
+          },
+          {
+            event_type: 'tool_executed',
+            event_payload: { tool: 'buscarProduto', ok: true, output: [{ product_id: 'p1' }] },
+            occurred_at: new Date('2026-04-29T12:01:00.000Z'),
+          },
+        ],
+      });
+
+    const context = await buildPlannerContext({ query } as never, 'test', conversationId);
+
+    expect(context.recent_tool_results).toEqual([
+      expect.objectContaining({ tool: 'buscarProduto', ok: true }),
+      expect.objectContaining({ tool: 'calcularFrete', ok: false }),
+    ]);
   });
 });
 

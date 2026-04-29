@@ -6,6 +6,7 @@ import {
   type ConversationState,
   type SessionSlotKey,
 } from '../../shared/zod/agent-state.js';
+import { collectToolProductIds, type ToolResultForValidation } from './tool-results.js';
 
 export type ActionValidationResult =
   | { valid: true }
@@ -17,6 +18,10 @@ function block(reason: string): ActionValidationResult {
 
 function itemExists(state: ConversationState, itemId: string): boolean {
   return state.items.some((item) => item.id === itemId);
+}
+
+export interface ActionValidationContext {
+  recent_tool_results?: ToolResultForValidation[];
 }
 
 function validateSlotScope(action: Extract<AgentAction, { type: 'update_slot' | 'mark_slot_stale' }>) {
@@ -51,7 +56,11 @@ function hasConfirmedCriticalSlots(state: ConversationState): boolean {
   return true;
 }
 
-export function validateAction(state: ConversationState, action: AgentAction): ActionValidationResult {
+export function validateAction(
+  state: ConversationState,
+  action: AgentAction,
+  context: ActionValidationContext = {},
+): ActionValidationResult {
   switch (action.type) {
     case 'update_slot': {
       const scopeValidation = validateSlotScope(action);
@@ -96,6 +105,15 @@ export function validateAction(state: ConversationState, action: AgentAction): A
       if (!['aberto', 'ofertado'].includes(item.status)) {
         return block('offer_requires_open_or_offered_item');
       }
+      if (context.recent_tool_results && context.recent_tool_results.length > 0) {
+        const toolProductIds = collectToolProductIds(context.recent_tool_results);
+        for (const product of action.products) {
+          const productId = product.product_id;
+          if (typeof productId === 'string' && !toolProductIds.has(productId)) {
+            return block('offer_product_not_supported_by_tool_result');
+          }
+        }
+      }
       return { valid: true };
     }
     case 'invalidate_offer':
@@ -112,8 +130,21 @@ export function validateAction(state: ConversationState, action: AgentAction): A
         return block('order_confirmation_requires_confirmed_critical_slots');
       }
       return { valid: true };
-    case 'add_to_cart':
+    case 'add_to_cart': {
+      const offeredProductIds = new Set(
+        state.last_offer?.products
+          .map((product) => product.product_id)
+          .filter((productId): productId is string => typeof productId === 'string') ?? [],
+      );
+      const toolProductIds = collectToolProductIds(context.recent_tool_results ?? []);
+      if (offeredProductIds.size > 0 && !offeredProductIds.has(action.product_id)) {
+        return block('cart_product_not_in_current_offer');
+      }
+      if (toolProductIds.size > 0 && !toolProductIds.has(action.product_id)) {
+        return block('cart_product_not_supported_by_tool_result');
+      }
       return { valid: true };
+    }
     case 'remove_from_cart':
     case 'update_cart_item':
     case 'clear_cart':

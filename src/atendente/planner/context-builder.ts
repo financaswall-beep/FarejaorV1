@@ -56,6 +56,20 @@ export async function buildPlannerContext(
      LIMIT 10`,
     [environment, conversationId],
   );
+  const toolEvents = await client.query<{
+    event_type: 'tool_executed' | 'tool_failed';
+    event_payload: Record<string, unknown>;
+    occurred_at: Date;
+  }>(
+    `SELECT event_type, event_payload, occurred_at
+     FROM agent.session_events
+     WHERE environment = $1
+       AND conversation_id = $2
+       AND event_type IN ('tool_executed', 'tool_failed')
+     ORDER BY occurred_at DESC
+     LIMIT 5`,
+    [environment, conversationId],
+  );
 
   return {
     environment,
@@ -74,9 +88,18 @@ export async function buildPlannerContext(
       'calcularFrete',
       'buscarPoliticaComercial',
     ],
-    // Sprint 3 ainda nao tem Executor nem evento tool_executed. Mentir
-    // planner_decided como se fosse resultado de tool confundiria o LLM.
-    recent_tool_results: [],
+    recent_tool_results: toolEvents.rows.reverse().flatMap((row) => {
+      const tool = row.event_payload.tool;
+      if (!isToolName(tool)) return [];
+      return [
+        {
+          tool,
+          ok: row.event_type === 'tool_executed',
+          summary: JSON.stringify(row.event_payload).slice(0, 500),
+          occurred_at: row.occurred_at.toISOString(),
+        },
+      ];
+    }),
     derived_signals: state.derived_signals,
   };
 }
@@ -85,4 +108,14 @@ function mapSenderRole(senderType: string): PlannerMessage['role'] {
   if (senderType === 'contact') return 'customer';
   if (senderType === 'user' || senderType === 'agent') return 'agent';
   return 'system';
+}
+
+function isToolName(value: unknown): value is ToolName {
+  return (
+    value === 'buscarProduto' ||
+    value === 'verificarEstoque' ||
+    value === 'buscarCompatibilidade' ||
+    value === 'calcularFrete' ||
+    value === 'buscarPoliticaComercial'
+  );
 }

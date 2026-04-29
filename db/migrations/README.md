@@ -31,6 +31,7 @@ Ordem de execução:
 23. `0023_analytics_marts_v1.sql` - cria schema `analytics_marts.*` com views iniciais de BI: demanda por pneu, bairro/municipio, horario, objecao de preco, concorrentes, intencao e qualidade da Organizadora.
 24. `0024_atendente_v1_state_extensions.sql` - extensoes aditivas para o Sprint 1 da Atendente v1: versionamento e idempotencia em `agent.session_current`/`agent.session_events`, novos `event_type`, `agent.session_items` e `agent.session_slots` para estado reentrante com procedencia.
 25. `0025_planner_foundation.sql` - base do Sprint 3 Planner: adiciona `planner_decided`, `aliases` em `commerce.vehicle_models`, `commerce.resolve_vehicle_model` e realinha helpers para `fitment_position`, `fitment_source`, `match_similarity`.
+26. `0026_tool_executor_events.sql` - base do Sprint 4 Executor: adiciona `tool_executed` e `tool_failed` ao ledger `agent.session_events`.
 
 ## Convenções
 

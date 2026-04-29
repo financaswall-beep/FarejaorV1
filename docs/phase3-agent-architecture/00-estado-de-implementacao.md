@@ -420,3 +420,54 @@ Fora de escopo ainda:
 
 **Proximo passo:** auditoria Opus da Sprint 3 foundation antes de seguir para
 worker shadow ou validadores de fala/ação.
+
+---
+
+## Atualizacao 2026-04-29 - Sprint 4 Executor/Guardrails iniciada
+
+**Status:** camada inicial de Executor e guardrails implementada localmente;
+migration `0026_tool_executor_events.sql` aplicada/validada no Supabase atual.
+O runtime da Atendente continua **desligado/inexistente**; nao ha envio
+Chatwoot nem Generator.
+
+Entregaveis:
+
+- Migration `0026_tool_executor_events.sql`:
+  - adiciona `tool_executed`;
+  - adiciona `tool_failed`.
+- `src/atendente/executor/tool-executor.ts`:
+  - executa `ToolRequest[]` do Planner;
+  - chama tools deterministicas;
+  - transforma erro de tool em resultado `ok=false` sem derrubar fluxo;
+  - grava eventos `tool_executed` / `tool_failed`.
+- `Context Builder` agora le eventos reais `tool_executed` / `tool_failed`
+  para preencher `recent_tool_results`.
+- `SayValidator` inicial:
+  - bloqueia dinheiro citado sem tool result;
+  - bloqueia valor diferente do retornado pela tool;
+  - permite valor que veio de tool.
+- `ActionValidator` reforcado:
+  - `record_offer` pode validar produtos contra resultados de tool;
+  - `add_to_cart` pode validar produto contra oferta atual e tool result.
+
+Validacao executada:
+
+- Aplicacao/validacao de `0026` no Supabase atual confirmou `tool_executed`
+  e `tool_failed` no CHECK de `agent.session_events`.
+- `npm run typecheck` verde.
+- `npm test` verde (251/251).
+- `npm run test:integration -- tests/integration/atendente-commerce-tools.integration.test.ts`
+  verde (5/5).
+- `npm run build` verde.
+
+Fora de escopo ainda:
+
+- Atendente worker;
+- Generator;
+- Critic;
+- envio Chatwoot;
+- execucao automatica em producao;
+- Planner LLM ligado por default.
+
+**Proximo passo:** auditoria Opus da Sprint 4 antes de pensar em worker
+shadow.
