@@ -45,7 +45,7 @@ export async function callOpenAI(options: OpenAICallOptions): Promise<OpenAICall
     model,
     response_format: { type: 'json_object' },
     messages,
-    max_tokens: maxTokens,
+    max_completion_tokens: maxTokens,
     temperature,
   });
 
