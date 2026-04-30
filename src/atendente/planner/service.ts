@@ -32,8 +32,8 @@ export async function planTurn(context: PlannerContext): Promise<PlannerDecision
     };
   }
 
-  if (!env.OPENAI_API_KEY) {
-    return fallbackResult('planner_llm_enabled_without_openai_key');
+  if (!env.PLANNER_OPENAI_API_KEY) {
+    return fallbackResult('planner_llm_enabled_without_planner_openai_key');
   }
 
   const startedAt = Date.now();
@@ -218,7 +218,7 @@ async function callPlannerModel(
   }
 
   const result = await callOpenAI({
-    apiKey: env.OPENAI_API_KEY!,
+    apiKey: env.PLANNER_OPENAI_API_KEY!,
     model: env.PLANNER_MODEL,
     messages,
     timeoutMs: env.OPENAI_TIMEOUT_MS,

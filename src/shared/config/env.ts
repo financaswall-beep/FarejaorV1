@@ -25,6 +25,7 @@ const envSchema = z.object({
   ORGANIZADORA_DEBOUNCE_SECONDS: z.string().transform(Number).pipe(z.number().int().min(10)).default('90'),
   ORGANIZADORA_POLL_INTERVAL_MS: z.string().transform(Number).pipe(z.number().int().min(1000)).default('5000'),
   PLANNER_LLM_ENABLED: booleanStringSchema,
+  PLANNER_OPENAI_API_KEY: z.string().min(1).optional(),
   PLANNER_MODEL: z.string().min(1).default('gpt-4o-mini'),
   // Atendente Shadow Worker (Sprint 5): log-only, sem Generator e sem Chatwoot.
   ATENDENTE_SHADOW_ENABLED: booleanStringSchema,
