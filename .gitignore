@@ -58,5 +58,13 @@ temp/
 
 # Local audit/simulator scripts may contain temporary tokens or endpoints.
 audit-*.js
+audit-*.cjs
 simulate-chatwoot.*
 chatwoot-chat.*
+chatwoot-play.*
+create-conv.*
+send-msg.*
+poll-atendente.*
+test-chatwoot-conn.*
+tmp-describe.*
+cenario-*.json

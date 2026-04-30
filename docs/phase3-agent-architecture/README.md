@@ -1,66 +1,47 @@
-# Fase 3 - Arquitetura do Agente de Pneus
+# Fase 3 - Arquitetura Do Agente De Pneus
 
-Status: rascunho de arquitetura. Nao implementar SQL nem codigo antes de revisar estes documentos.
+Status: arquitetura aprovada em camadas e parcialmente implementada.
 
-Esta pasta organiza a conversa sobre a Fase 3 do `farejador-pneus`.
+Esta pasta guarda o desenho e o log da Fase 3. Os docs 01-21 continuam como
+registro arquitetural; o estado vivo fica em `00-estado-de-implementacao.md`.
 
-Objetivo: desenhar a arquitetura do agente antes de codar, mantendo a separacao:
+## Estado Atual Curto
 
-- Farejador captura e normaliza.
-- LLM Organizadora entende a conversa.
-- LLM Atendente conversa com o cliente.
-- `commerce.*` informa catalogo, preco, estoque e politicas.
-- `agent.*` guarda o estado operacional do atendimento.
+- Organizadora LLM: em producao.
+- Shadow Assistido: em andamento.
+- Atendente Sprint 1: estado reentrante implementado.
+- Atendente Sprint 2: tools deterministicas implementadas.
+- Atendente Sprint 3: Planner foundation implementado.
+- Atendente Sprint 4: Executor/guardrails implementados.
+- Proxima fase: Sprint 5 Worker Shadow, ainda sem Generator e sem envio
+  Chatwoot.
 
-## Indice
+## Indice Principal
 
+0. [Estado de implementacao](00-estado-de-implementacao.md)
 1. [Visao geral](01-visao-geral.md)
 2. [Principios operacionais](02-principios-operacionais.md)
-3. [Mapa de dados que queremos capturar](03-mapa-de-dados.md)
+3. [Mapa de dados](03-mapa-de-dados.md)
 4. [Blocos do banco](04-blocos-do-banco.md)
-5. [Fact ledger da LLM Organizadora](05-fact-ledger-organizadora.md)
-6. [Estado da LLM Atendente](06-agent-state-atendente.md)
+5. [Fact ledger da Organizadora](05-fact-ledger-organizadora.md)
+6. [Estado da Atendente](06-agent-state-atendente.md)
 7. [Commerce e grafo veicular](07-commerce-grafo-veicular.md)
-8. [Business intelligence - rei dos dados](08-business-intelligence-data-king.md)
-9. [Skills, router e validadores](09-skills-router-e-validadores.md)
+8. [Business intelligence](08-business-intelligence-data-king.md)
+9. [Skills, Planner e validadores](09-skills-router-e-validadores.md)
 10. [Plano de fases](10-plano-de-fases.md)
-11. [Perguntas abertas](11-perguntas-abertas.md)
+11. [Perguntas abertas historicas](11-perguntas-abertas.md)
 12. [Context Builder e slot filling](12-context-builder-e-slot-filling.md)
 13. [Fluxo de eventos e integracao](13-fluxo-de-eventos-e-integracao.md)
 14. [Topologia de execucao](14-topologia-de-execucao.md)
-15. [Shadow assistido por 5 semanas](15-shadow-assisted-mode.md)
+15. [Shadow assistido](15-shadow-assisted-mode.md)
 16. [Planejamento das tabelas em portugues](16-planejamento-tabelas-em-portugues.md)
 17. [Mapa portugues -> ingles tecnico](17-mapa-portugues-ingles.md)
-18. [Diagrama ER (relacionamentos)](18-diagrama-er.md)
+18. [Diagrama ER](18-diagrama-er.md)
 19. [Guia de teste Chatwoot + Organizadora](19-guia-teste-chatwoot-organizadora.md)
 20. [Analytics marts v1](20-analytics-marts-v1.md)
+21. [Atendente v1 state design](21-atendente-v1-state-design.md)
 
-## Apoio em outras pastas
+## Regra Operacional
 
-- `docs/adr/ADR-004-fase-3-arquitetura-agente.md` - decisoes registradas
-- `docs/DATA_DICTIONARY.md` - secao Fase 3 atualizada (em portugues simples)
-- `segments/moto-pneus/extraction-schema.json` - whitelist de fact_keys da Organizadora
-- `docs/CHECKLIST.md` - secao 7 com etapas A ate F
-
-## Regra de leitura
-
-Estes documentos sao o blueprint. Eles devem ser revisados antes de criar migrations.
-
-Depois da aprovacao:
-
-1. transformar em docs oficiais da Fase 3;
-2. criar migrations SQL;
-3. atualizar `docs/DATA_DICTIONARY.md` em portugues simples;
-4. so entao implementar TypeScript.
-
-## Decisao de rollout
-
-Antes de ligar a LLM Atendente, o projeto tera um periodo de **Shadow Assistido**:
-
-- Wallace atende manualmente por aproximadamente 5 semanas;
-- Farejador continua capturando `raw.*` e `core.*`;
-- LLM Organizadora processa as conversas e popula `analytics.*`;
-- LLM Atendente fica desligada por feature flag;
-- os dados reais calibram skills, prompts, fact_keys, estoque e dashboards.
-
-Com cerca de 100 conversas novas por dia, esse periodo deve gerar aproximadamente 3.500 conversas reais para calibracao.
+Nada da Atendente deve enviar mensagem ao cliente ate Wallace autorizar. As
+proximas sprints devem continuar em shadow/log-only.

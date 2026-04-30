@@ -1,6 +1,24 @@
 # Checklist Master - Farejador
 
-Atualizado: 26/04/2026
+Atualizado: 2026-04-29
+
+> Nota: este checklist preserva historico das Fases 1/2a. Para o estado vivo
+> da Fase 3 e proximo passo, use `docs/NEXT_CHAT_HANDOFF.md` e
+> `docs/phase3-agent-architecture/00-estado-de-implementacao.md`.
+
+## 0. Estado Atual Resumido
+
+- [x] Fase 1 em prod.
+- [x] Fase 2a concluida.
+- [x] Organizadora LLM em prod.
+- [x] Atendente Sprint 1: estado reentrante.
+- [x] Atendente Sprint 2: tools deterministicas.
+- [x] Atendente Sprint 3: Planner foundation.
+- [x] Atendente Sprint 4: Executor/guardrails.
+- [ ] Atendente Sprint 5: Worker Shadow minimalista.
+- [ ] Generator.
+- [ ] Critic.
+- [ ] Envio Chatwoot pela Atendente.
 
 Legenda: feito, em andamento, proximo, futuro.
 
