@@ -1,5 +1,8 @@
 import type { ToolName } from '../planner/schemas.js';
 
+const MAX_COLLECT_DEPTH = 8;
+const MAX_ARRAY_ITEMS = 100;
+
 export interface ToolResultForValidation {
   tool: ToolName;
   ok: boolean;
@@ -25,30 +28,32 @@ export function collectToolPrices(results: ToolResultForValidation[]): Set<numbe
 export function collectDeliveryFees(results: ToolResultForValidation[]): Set<number> {
   const fees = new Set<number>();
   for (const result of results.filter((item) => item.ok && item.tool === 'calcularFrete')) {
-    collectFieldNumbers(result.output, 'valor', fees);
+    collectFieldNumbers(result.output, 'valor', fees, 0);
   }
   return fees;
 }
 
-function collectProductIds(value: unknown, out: Set<string>): void {
+function collectProductIds(value: unknown, out: Set<string>, depth = 0): void {
+  if (depth > MAX_COLLECT_DEPTH) return;
   if (Array.isArray(value)) {
-    for (const item of value) collectProductIds(item, out);
+    for (const item of value.slice(0, MAX_ARRAY_ITEMS)) collectProductIds(item, out, depth + 1);
     return;
   }
   if (!value || typeof value !== 'object') return;
   const record = value as Record<string, unknown>;
   if (typeof record.product_id === 'string') out.add(record.product_id);
-  for (const nested of Object.values(record)) collectProductIds(nested, out);
+  for (const nested of Object.values(record)) collectProductIds(nested, out, depth + 1);
 }
 
 function collectPrices(value: unknown, out: Set<number>): void {
-  collectFieldNumbers(value, 'price_amount', out);
-  collectFieldNumbers(value, 'current_price', out);
+  collectFieldNumbers(value, 'price_amount', out, 0);
+  collectFieldNumbers(value, 'current_price', out, 0);
 }
 
-function collectFieldNumbers(value: unknown, field: string, out: Set<number>): void {
+function collectFieldNumbers(value: unknown, field: string, out: Set<number>, depth: number): void {
+  if (depth > MAX_COLLECT_DEPTH) return;
   if (Array.isArray(value)) {
-    for (const item of value) collectFieldNumbers(item, field, out);
+    for (const item of value.slice(0, MAX_ARRAY_ITEMS)) collectFieldNumbers(item, field, out, depth + 1);
     return;
   }
   if (!value || typeof value !== 'object') return;
@@ -57,5 +62,5 @@ function collectFieldNumbers(value: unknown, field: string, out: Set<number>): v
     const parsed = Number(record[field]);
     if (Number.isFinite(parsed)) out.add(parsed);
   }
-  for (const nested of Object.values(record)) collectFieldNumbers(nested, field, out);
+  for (const nested of Object.values(record)) collectFieldNumbers(nested, field, out, depth + 1);
 }

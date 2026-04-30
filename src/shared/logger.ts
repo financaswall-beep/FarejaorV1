@@ -1,9 +1,12 @@
 import pino from 'pino';
 import type { LoggerOptions } from 'pino';
-import { env } from './config/env.js';
+
+const logLevel = ['trace', 'debug', 'info', 'warn', 'error'].includes(process.env.LOG_LEVEL ?? '')
+  ? process.env.LOG_LEVEL
+  : 'info';
 
 export const loggerOptions: LoggerOptions = {
-  level: env.LOG_LEVEL,
+  level: logLevel,
   redact: {
     paths: [
       'req.headers.authorization',

@@ -94,9 +94,11 @@ describe('Tool Executor Sprint 4', () => {
     ]);
 
     expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[0]?.[0]).toContain('ON CONFLICT (action_id) DO NOTHING');
     expect(query.mock.calls[0]?.[1]).toEqual(
       expect.arrayContaining(['test', conversationId, 3, 'tool_executed']),
     );
+    expect(query.mock.calls[0]?.[1]?.[5]).toEqual(expect.stringMatching(/^[0-9a-f-]{36}$/));
     expect(query.mock.calls[1]?.[1]).toEqual(
       expect.arrayContaining(['test', conversationId, 3, 'tool_failed']),
     );

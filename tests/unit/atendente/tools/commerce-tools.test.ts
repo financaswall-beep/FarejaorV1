@@ -7,6 +7,7 @@ import {
   calcularFrete,
   verificarEstoque,
 } from '../../../../src/atendente/tools/commerce-tools.js';
+import { logger } from '../../../../src/shared/logger.js';
 
 interface QueryCall {
   text: string;
@@ -242,7 +243,7 @@ describe('commerce tools deterministicas da Atendente', () => {
   });
 
   it('buscarPoliticaComercial ignora policy_key desconhecida sem abortar conhecidas', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const client = clientWithRows([
       [
         {
@@ -270,7 +271,10 @@ describe('commerce tools deterministicas da Atendente', () => {
         policy_version: 'v1',
       },
     ]);
-    expect(warn).toHaveBeenCalledWith('[atendente] unsupported_policy_key:valor_minimo_pedido');
+    expect(warn).toHaveBeenCalledWith(
+      { policy_key: 'valor_minimo_pedido' },
+      'atendente_unsupported_policy_key',
+    );
     warn.mockRestore();
   });
 });

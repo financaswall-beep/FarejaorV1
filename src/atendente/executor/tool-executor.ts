@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import {
   buscarCompatibilidade,
@@ -61,11 +62,12 @@ export async function recordToolExecutionResults(
   context: PlannerContext,
   results: ToolExecutionResult[],
 ): Promise<void> {
-  for (const result of results) {
+  for (const [index, result] of results.entries()) {
     await client.query(
       `INSERT INTO agent.session_events
-         (environment, conversation_id, turn_index, event_type, event_payload, emitted_by)
-       VALUES ($1, $2, $3, $4, $5, 'system')`,
+         (environment, conversation_id, turn_index, event_type, event_payload, emitted_by, action_id)
+       VALUES ($1, $2, $3, $4, $5, 'system', $6)
+       ON CONFLICT (action_id) DO NOTHING`,
       [
         context.environment,
         context.conversation_id,
@@ -79,6 +81,16 @@ export async function recordToolExecutionResults(
           duration_ms: result.duration_ms,
           error_message: result.error_message,
         }),
+        deterministicActionId([
+          'tool_execution',
+          context.environment,
+          context.conversation_id,
+          context.state.turn_index + 1,
+          index,
+          result.tool,
+          result.input,
+          result.ok,
+        ]),
       ],
     );
   }
@@ -97,4 +109,22 @@ async function dispatchTool(client: PoolClient, request: ToolRequest): Promise<u
     case 'buscarPoliticaComercial':
       return buscarPoliticaComercial(client, request.input);
   }
+}
+
+function deterministicActionId(parts: unknown[]): string {
+  const hash = createHash('sha256').update(stableStringify(parts)).digest('hex');
+  const variant = ((Number.parseInt(hash[16] ?? '0', 16) & 0x3) | 0x8).toString(16);
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-${variant}${hash.slice(
+    17,
+    20,
+  )}-${hash.slice(20, 32)}`;
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  if (!value || typeof value !== 'object') return JSON.stringify(value);
+  return `{${Object.entries(value as Record<string, unknown>)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+    .join(',')}}`;
 }

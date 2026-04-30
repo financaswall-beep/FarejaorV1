@@ -1,5 +1,6 @@
 import type { PoolClient } from 'pg';
 import { z } from 'zod';
+import { logger } from '../../shared/logger.js';
 import type { Environment } from '../../shared/types/chatwoot.js';
 import { isKnownPolicyKey, parsePolicyValue } from '../policies/policy-schemas.js';
 
@@ -418,7 +419,7 @@ export async function buscarPoliticaComercial(
 
   return result.rows.flatMap((row) => {
     if (!isKnownPolicyKey(row.policy_key)) {
-      console.warn(`[atendente] unsupported_policy_key:${row.policy_key}`);
+      logger.warn({ policy_key: row.policy_key }, 'atendente_unsupported_policy_key');
       return [];
     }
     return [

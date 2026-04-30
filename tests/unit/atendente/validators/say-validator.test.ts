@@ -23,6 +23,20 @@ describe('SayValidator inicial', () => {
     ).toEqual({ valid: true });
   });
 
+  it('entende separador de milhar em valores monetarios', () => {
+    expect(
+      validateSay('O jogo completo fica em R$ 1.750,00', {
+        recent_tool_results: [
+          {
+            tool: 'buscarProduto',
+            ok: true,
+            output: [{ product_id: 'p1', price_amount: '1750.00' }],
+          },
+        ],
+      }),
+    ).toEqual({ valid: true });
+  });
+
   it('bloqueia preco inventado diferente do resultado da tool', () => {
     expect(
       validateSay('Esse pneu sai por R$ 180,00', {

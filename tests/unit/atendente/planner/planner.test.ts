@@ -175,5 +175,7 @@ describe('Planner Sprint 3', () => {
       expect.stringContaining('planner_decided'),
       expect.arrayContaining(['test', conversationId, 3, 'escalar_humano']),
     );
+    expect(query.mock.calls[0]?.[0]).toContain('ON CONFLICT (action_id) DO NOTHING');
+    expect(query.mock.calls[0]?.[1]?.[5]).toEqual(expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
 });

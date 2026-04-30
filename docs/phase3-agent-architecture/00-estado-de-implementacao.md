@@ -471,3 +471,22 @@ Fora de escopo ainda:
 
 **Proximo passo:** auditoria Opus da Sprint 4 antes de pensar em worker
 shadow.
+
+### Hardening pos-auditoria Sprint 4
+
+Debitos medios da auditoria Sprint 4 tratados antes do worker shadow:
+
+- `SayValidator` agora entende valores monetarios com separador de milhar
+  (`R$ 1.750,00`).
+- `buscarPoliticaComercial` usa logger estruturado para
+  `unsupported_policy_key`, em vez de `console.warn`.
+- `recordPlannerDecision` e `recordToolExecutionResults` gravam `action_id`
+  deterministico e usam `ON CONFLICT (action_id) DO NOTHING`.
+- Coletores recursivos de valores/produtos em tool results agora tem limite de
+  profundidade e tamanho de arrays.
+
+Debito mantido:
+
+- Validacao textual de estoque inventado ("tenho 50 unidades") fica para a
+  etapa de Generator/SayValidator expandido, quando houver resposta candidata
+  completa e contrato de estoque no prompt.

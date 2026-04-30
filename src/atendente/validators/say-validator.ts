@@ -33,11 +33,9 @@ function block(reason: string): SayValidationResult {
 
 function extractMoneyValues(text: string): number[] {
   const out: number[] = [];
-  const moneyPattern = /(?:r\$\s*)?(\d{1,5})(?:[,.](\d{2}))?/gi;
+  const moneyPattern = /r\$\s*((?:\d{1,3}(?:\.\d{3})+)|\d+)(?:,(\d{2}))?/gi;
   for (const match of text.matchAll(moneyPattern)) {
-    const hasCurrency = match[0].toLowerCase().includes('r$');
-    if (!hasCurrency) continue;
-    const whole = match[1];
+    const whole = match[1]?.replace(/\./g, '');
     if (!whole) continue;
     const cents = match[2] ?? '00';
     const amount = Number(`${whole}.${cents}`);
