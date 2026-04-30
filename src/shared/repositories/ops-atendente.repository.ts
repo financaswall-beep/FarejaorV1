@@ -1,0 +1,84 @@
+/**
+ * Repository para ops.atendente_jobs - Sprint 5 (Worker Shadow).
+ * Cobre pickup com FOR UPDATE SKIP LOCKED e transicoes de status.
+ */
+
+import type { PoolClient } from 'pg';
+import type { Environment } from '../types/chatwoot.js';
+import type { AtendenteJobStatus } from '../types/ops-phase3.js';
+
+export interface AtendenteJobRow {
+  id: string;
+  environment: Environment;
+  conversation_id: string;
+  trigger_message_id: string;
+  status: AtendenteJobStatus;
+  attempts: number;
+}
+
+export async function pickAtendenteJob(
+  client: PoolClient,
+  environment: Environment,
+): Promise<AtendenteJobRow | null> {
+  const result = await client.query<AtendenteJobRow>(
+    `SELECT id, environment, conversation_id, trigger_message_id, status, attempts
+     FROM ops.atendente_jobs
+     WHERE environment = $1
+       AND status = 'pending'
+       AND not_before <= now()
+     ORDER BY not_before
+     LIMIT 1
+     FOR UPDATE SKIP LOCKED`,
+    [environment],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function markAtendenteJobProcessing(
+  client: PoolClient,
+  jobId: string,
+  workerId: string,
+): Promise<void> {
+  await client.query(
+    `UPDATE ops.atendente_jobs
+     SET status     = 'processing',
+         locked_at  = now(),
+         locked_by  = $2,
+         attempts   = attempts + 1
+     WHERE id = $1`,
+    [jobId, workerId],
+  );
+}
+
+export async function markAtendenteJobProcessed(
+  client: PoolClient,
+  jobId: string,
+): Promise<void> {
+  await client.query(
+    `UPDATE ops.atendente_jobs
+     SET status        = 'processed',
+         processed_at  = now(),
+         locked_at     = NULL,
+         locked_by     = NULL,
+         error_message = NULL
+     WHERE id = $1`,
+    [jobId],
+  );
+}
+
+export async function markAtendenteJobFailed(
+  client: PoolClient,
+  jobId: string,
+  errorMessage: string,
+): Promise<void> {
+  await client.query(
+    `UPDATE ops.atendente_jobs
+     SET status        = 'failed',
+         processed_at  = now(),
+         locked_at     = NULL,
+         locked_by     = NULL,
+         error_message = $2
+     WHERE id = $1`,
+    [jobId, errorMessage.slice(0, 1000)],
+  );
+}
