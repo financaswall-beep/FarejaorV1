@@ -102,6 +102,7 @@ describe('Tool Executor Sprint 4', () => {
     expect(query.mock.calls[1]?.[1]).toEqual(
       expect.arrayContaining(['test', conversationId, 3, 'tool_failed']),
     );
+    expect(query.mock.calls[1]?.[1]?.[5]).not.toBe(query.mock.calls[0]?.[1]?.[5]);
   });
 });
 

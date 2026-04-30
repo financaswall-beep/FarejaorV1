@@ -178,4 +178,32 @@ describe('Planner Sprint 3', () => {
     expect(query.mock.calls[0]?.[0]).toContain('ON CONFLICT (action_id) DO NOTHING');
     expect(query.mock.calls[0]?.[1]?.[5]).toEqual(expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
+
+  it('recordPlannerDecision usa action_id estavel por turno mesmo com output diferente', async () => {
+    const query = vi.fn().mockResolvedValue({ rowCount: 1, rows: [] });
+    const client = { query };
+    const ctx = context();
+
+    await recordPlannerDecision(client as never, ctx, {
+      output: fallbackPlannerOutput('primeira_saida'),
+      used_llm: false,
+      fallback_used: true,
+      input_tokens: 0,
+      output_tokens: 0,
+      duration_ms: 0,
+    });
+    await recordPlannerDecision(client as never, ctx, {
+      output: {
+        ...fallbackPlannerOutput('segunda_saida'),
+        rationale: 'Outra decisao para o mesmo turno.',
+      },
+      used_llm: false,
+      fallback_used: true,
+      input_tokens: 0,
+      output_tokens: 0,
+      duration_ms: 0,
+    });
+
+    expect(query.mock.calls[0]?.[1]?.[5]).toBe(query.mock.calls[1]?.[1]?.[5]);
+  });
 });
